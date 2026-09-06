@@ -1,0 +1,847 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #f8fafc;
+    --accent: #38bdf8;
+    --main-bg: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --line: #e2e8f0;
+    --font-sans: 'Plus Jakarta Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #0f172a;
+    color: #f8fafc;
+  }
+}
+
+/* =========================================================
+   GEOMETRIC BALANCE CORE DESIGN SYSTEM
+   ========================================================= */
+
+/* A4 Paper Dimensions & Geometric Elevation */
+.a4-paper-container {
+  width: 210mm;
+  min-height: 297mm;
+  background-color: var(--main-bg);
+  color: var(--text-primary);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(15, 23, 42, 0.08);
+  box-sizing: border-box;
+  font-size: 10pt;
+  line-height: 1.5;
+  margin: 0 auto;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Geometric Section Heading with Line Divider */
+.section-heading,
+.geo-heading {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.section-heading h2,
+.geo-heading h2 {
+  font-size: 11.5pt;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+  padding-right: 14px;
+  line-height: 1.2;
+}
+.section-heading::after,
+.geo-heading::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+}
+
+/* Geometric Summary Box with Left Obsidian Accent */
+.summary-box,
+.geo-summary-box {
+  background: #f8fafc;
+  padding: 14px 18px;
+  border-left: 4px solid var(--sidebar-bg);
+  margin-bottom: 18px;
+  border-radius: 2px;
+}
+.summary-text,
+.geo-summary-text {
+  font-size: 9.5pt;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Geometric Timeline Experience Item with Node */
+.experience-item,
+.geo-experience-item {
+  margin-bottom: 18px;
+  position: relative;
+  padding-left: 18px;
+  border-left: 2px solid var(--line);
+}
+.experience-item::before,
+.geo-experience-item::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  background: var(--sidebar-bg);
+  border-radius: 50%;
+}
+.job-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 3px;
+}
+.job-role {
+  font-size: 10pt;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.job-date {
+  font-size: 8.5pt;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.company-name {
+  font-size: 9pt;
+  font-weight: 600;
+  color: #0284c7;
+  margin-bottom: 4px;
+}
+
+/* Geometric Skill Pill with Sky Left Border */
+.skill-pill,
+.geo-skill-pill {
+  display: inline-block;
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 9pt;
+  margin-right: 6px;
+  margin-bottom: 6px;
+  border-left: 2.5px solid var(--accent);
+  letter-spacing: 0.2px;
+}
+
+/* Geometric Education Grid & Cards */
+.education-grid,
+.geo-education-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.edu-card,
+.geo-edu-card {
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
+/* =========================================================
+   10 PRO CV TEMPLATES STYLES (ENHANCED WITH GEOMETRIC BALANCE)
+   ========================================================= */
+
+/* Format 1: Gulf Standard Classic */
+.fmt-gulf-1 {
+  font-family: 'Times New Roman', Times, serif;
+  padding: 16mm 18mm;
+}
+.fmt-gulf-1 .cv-title-head {
+  text-align: center;
+  margin-bottom: 12px;
+}
+.fmt-gulf-1 .cv-title-head h2 {
+  font-size: 15pt;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  color: #000;
+  margin: 0;
+}
+.fmt-gulf-1 .cv-title-head h1 {
+  font-size: 17pt;
+  font-weight: bold;
+  margin: 2px 0 4px 0;
+  color: #000;
+  text-transform: uppercase;
+}
+.fmt-gulf-1 .sec-banner {
+  background-color: #a89bc4;
+  color: #000000;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
+  padding: 3px 8px;
+  margin: 10px 0 6px 0;
+  font-size: 9.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-left: 3px solid #6b5b95;
+}
+.fmt-gulf-1 table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+}
+.fmt-gulf-1 table.info-tbl td {
+  padding: 2.5px 0;
+  vertical-align: top;
+}
+.fmt-gulf-1 table.info-tbl td.lbl {
+  width: 150px;
+  font-weight: bold;
+  color: #111827;
+}
+.fmt-gulf-1 table.grid-tbl th,
+.fmt-gulf-1 table.grid-tbl td {
+  border: 1px solid #000000;
+  padding: 4px 6px;
+  text-align: left;
+}
+.fmt-gulf-1 table.grid-tbl th {
+  background-color: #f1f5f9;
+  font-weight: bold;
+}
+
+/* Format 2: Gulf Modern Blue */
+.fmt-gulf-2 {
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+  padding: 14mm 16mm;
+}
+.fmt-gulf-2 .header-box {
+  background: #0f172a;
+  color: white;
+  padding: 18px 22px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  border-left: 4px solid var(--accent);
+}
+.fmt-gulf-2 .sec-banner {
+  border-bottom: 2px solid #0f172a;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 10.5pt;
+  margin: 12px 0 6px 0;
+  padding-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.fmt-gulf-2 table.info-tbl td.lbl {
+  font-weight: 700;
+  color: #0f172a;
+  width: 160px;
+}
+.fmt-gulf-2 table.grid-tbl th {
+  background-color: #0f172a;
+  color: #ffffff;
+  border: 1px solid #0f172a;
+  padding: 5px 8px;
+  letter-spacing: 0.5px;
+}
+.fmt-gulf-2 table.grid-tbl td {
+  border: 1px solid #cbd5e1;
+  padding: 5px 8px;
+}
+
+/* Format 3: Gulf Overseas Compact */
+.fmt-gulf-3 {
+  font-family: Georgia, 'Times New Roman', serif;
+  padding: 14mm 16mm;
+}
+.fmt-gulf-3 .cv-title-head {
+  text-align: center;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+.fmt-gulf-3 .sec-banner {
+  background: #0f172a;
+  color: white;
+  padding: 3px 10px;
+  font-weight: bold;
+  font-size: 9.5pt;
+  margin: 10px 0 5px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-left: 3px solid var(--accent);
+}
+.fmt-gulf-3 table.info-tbl td {
+  padding: 2px 0;
+}
+.fmt-gulf-3 table.info-tbl td.lbl {
+  width: 140px;
+  font-weight: bold;
+  color: #0f172a;
+}
+.fmt-gulf-3 table.grid-tbl th,
+.fmt-gulf-3 table.grid-tbl td {
+  border: 1px solid #64748b;
+  padding: 4px 6px;
+}
+
+/* Format 4: Technical 2-Column Sidebar (Geometric Balance Prime) */
+.fmt-tech-1 {
+  font-family: 'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif;
+  padding: 0 !important;
+  display: flex;
+}
+.fmt-tech-1 .left-col {
+  width: 34%;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 16mm 10mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.fmt-tech-1 .right-col {
+  width: 66%;
+  padding: 16mm 12mm 16mm 10mm;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  color: #1e293b;
+}
+.fmt-tech-1 .sec-title-left {
+  border-bottom: 1px solid #334155;
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 9.5pt;
+  margin: 16px 0 10px 0;
+  padding-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  display: block;
+}
+.fmt-tech-1 .sec-title-right {
+  display: flex;
+  align-items: center;
+  margin: 14px 0 10px 0;
+}
+.fmt-tech-1 .sec-title-right h2 {
+  font-size: 11pt;
+  font-weight: 800;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+  padding-right: 12px;
+}
+.fmt-tech-1 .sec-title-right::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+}
+
+/* Format 5: Technical Grid Bold */
+.fmt-tech-2 {
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+  padding: 15mm 18mm;
+}
+.fmt-tech-2 .top-bar {
+  border-left: 5px solid #0f172a;
+  padding-left: 14px;
+  margin-bottom: 15px;
+}
+.fmt-tech-2 .sec-banner {
+  background: #f8fafc;
+  border-left: 4px solid #38bdf8;
+  font-weight: 800;
+  padding: 4px 10px;
+  margin: 12px 0 6px 0;
+  color: #0f172a;
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.fmt-tech-2 table.grid-tbl th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  font-weight: 700;
+  padding: 5px 8px;
+}
+.fmt-tech-2 table.grid-tbl td {
+  border: 1px solid #e2e8f0;
+  padding: 5px 8px;
+}
+
+/* Format 6: Electrical & Industrial Clean */
+.fmt-tech-3 {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+  padding: 15mm 18mm;
+}
+.fmt-tech-3 .sec-banner {
+  color: #0f172a;
+  border-bottom: 2px solid #0f172a;
+  font-weight: 800;
+  font-size: 10.5pt;
+  margin: 12px 0 6px 0;
+  padding-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.fmt-tech-3 table.info-tbl td.lbl {
+  font-weight: 700;
+  color: #0f172a;
+  width: 150px;
+}
+.fmt-tech-3 table.grid-tbl th {
+  background-color: #0f172a;
+  color: #ffffff;
+  border: 1px solid #0f172a;
+  padding: 5px 8px;
+}
+.fmt-tech-3 table.grid-tbl td {
+  border: 1px solid #cbd5e1;
+  padding: 5px 8px;
+}
+
+/* Format 7: Modern Corporate Split Accent */
+.fmt-corp-1 {
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+  padding: 16mm 18mm;
+}
+.fmt-corp-1 .name-header {
+  text-align: left;
+  border-bottom: 3px solid #0f172a;
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+}
+.fmt-corp-1 .sec-banner {
+  color: #0f172a;
+  font-size: 10.5pt;
+  font-weight: 800;
+  margin: 13px 0 6px 0;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-left: 3px solid #38bdf8;
+  padding-left: 6px;
+}
+.fmt-corp-1 table.grid-tbl th {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  padding: 5px 8px;
+}
+.fmt-corp-1 table.grid-tbl td {
+  border: 1px solid #e2e8f0;
+  padding: 5px 8px;
+}
+
+/* Format 8: Minimalist Executive Classic */
+.fmt-corp-2 {
+  font-family: 'Merriweather', 'Times New Roman', serif;
+  padding: 16mm 18mm;
+}
+.fmt-corp-2 .cv-title-head {
+  text-align: center;
+  margin-bottom: 14px;
+}
+.fmt-corp-2 .sec-banner {
+  text-align: center;
+  border-top: 1.5px solid #0f172a;
+  border-bottom: 1.5px solid #0f172a;
+  padding: 3px 0;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  margin: 12px 0 6px 0;
+  text-transform: uppercase;
+  font-size: 9.5pt;
+}
+.fmt-corp-2 table.info-tbl td.lbl {
+  font-weight: bold;
+  width: 150px;
+}
+.fmt-corp-2 table.grid-tbl th,
+.fmt-corp-2 table.grid-tbl td {
+  border: 1px solid #1e293b;
+  padding: 4px 6px;
+}
+
+/* Format 9: Creative Modern Dark Slate Accent */
+.fmt-corp-3 {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+  padding: 16mm 18mm;
+}
+.fmt-corp-3 .sec-banner {
+  background: #0f172a;
+  color: white;
+  padding: 4px 12px;
+  font-weight: 700;
+  border-radius: 2px;
+  margin: 12px 0 6px 0;
+  font-size: 9.5pt;
+  letter-spacing: 0.8px;
+  border-left: 3px solid #38bdf8;
+}
+.fmt-corp-3 table.info-tbl td.lbl {
+  font-weight: 700;
+  color: #0f172a;
+  width: 150px;
+}
+.fmt-corp-3 table.grid-tbl th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  padding: 5px 8px;
+}
+.fmt-corp-3 table.grid-tbl td {
+  border: 1px solid #e2e8f0;
+  padding: 5px 8px;
+}
+
+/* Format 10: Elegant Standard Two-Border */
+.fmt-corp-4 {
+  font-family: Georgia, 'Times New Roman', serif;
+  padding: 16mm 18mm;
+}
+.fmt-corp-4 .sec-banner {
+  border-bottom: 1.5px solid #0f172a;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 10.5pt;
+  margin: 12px 0 6px 0;
+  padding-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.fmt-corp-4 table.info-tbl td.lbl {
+  font-weight: bold;
+  color: #0f172a;
+  width: 150px;
+}
+.fmt-corp-4 table.grid-tbl th {
+  border-bottom: 2px solid #0f172a;
+  border-top: 1px solid #e2e8f0;
+  padding: 5px 8px;
+  font-weight: bold;
+}
+.fmt-corp-4 table.grid-tbl td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 5px 8px;
+}
+
+/* =========================================================
+   ADDITIONAL A4 PAGE STYLES
+   ========================================================= */
+.fmt-additional-page {
+  padding: 16mm 18mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+.fmt-additional-page .page-header {
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.fmt-additional-page .page-candidate-name {
+  font-size: 13pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #0f172a;
+  line-height: 1.2;
+}
+.fmt-additional-page .page-candidate-sub {
+  font-size: 8.5pt;
+  color: #475569;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.fmt-additional-page .page-badge {
+  font-size: 8pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #0f172a;
+  background: #e2e8f0;
+  padding: 3px 8px;
+  border-radius: 2px;
+  border: 1px solid #cbd5e1;
+}
+.fmt-additional-page .page-content-area {
+  flex: 1;
+}
+.fmt-additional-page .page-title-banner {
+  background-color: #0f172a;
+  color: #ffffff;
+  padding: 5px 10px;
+  font-size: 10pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+.fmt-additional-page .page-text {
+  font-size: 9.5pt;
+  line-height: 1.6;
+  color: #1e293b;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+.fmt-additional-page .page-bullets {
+  list-style-type: square;
+  padding-left: 20px;
+  margin-bottom: 16px;
+  font-size: 9.5pt;
+  color: #0f172a;
+}
+.fmt-additional-page .page-bullets li {
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+.fmt-additional-page .doc-image-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.fmt-additional-page .doc-image-card {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  border-radius: 4px;
+  padding: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* =========================================================
+   PRINT STYLES FOR EXACT A4 SHEET EXPORT
+   ========================================================= */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  
+  html, body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hide all app chrome and control bars */
+  header,
+  .no-print,
+  .form-panel,
+  .preview-controls,
+  .app-toast,
+  .app-modal,
+  .print-hide {
+    display: none !important;
+  }
+
+  .workspace {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .preview-workspace {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .preview-panel {
+    background-color: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .preview-zoom-wrapper {
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .a4-paper-container {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    max-width: 210mm !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    break-inside: avoid !important;
+  }
+
+  .a4-paper-container:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* =========================================================
+   TYPOGRAPHY & FONT FAMILIES
+   ========================================================= */
+.cv-font-times,
+.cv-font-times * {
+  font-family: 'Times New Roman', 'Tinos', Times, 'Nimbus Roman No9 L', Georgia, serif !important;
+}
+
+.cv-font-arial,
+.cv-font-arial * {
+  font-family: Arial, 'Arimo', 'Helvetica Neue', Helvetica, sans-serif !important;
+}
+
+.cv-font-calibri,
+.cv-font-calibri * {
+  font-family: Calibri, 'Segoe UI', Candara, Optima, sans-serif !important;
+}
+
+.cv-font-georgia,
+.cv-font-georgia * {
+  font-family: Georgia, Cambria, 'Times New Roman', serif !important;
+}
+
+.cv-font-garamond,
+.cv-font-garamond * {
+  font-family: 'EB Garamond', Garamond, 'Baskerville', serif !important;
+}
+
+.cv-font-trebuchet,
+.cv-font-trebuchet * {
+  font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', sans-serif !important;
+}
+
+.cv-font-sans,
+.cv-font-sans * {
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif !important;
+}
+
+.cv-font-serif,
+.cv-font-serif * {
+  font-family: 'Times New Roman', Georgia, serif !important;
+}
+
+.cv-font-bengali,
+.cv-font-bengali * {
+  font-family: 'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif !important;
+}
+
+.cv-font-mono,
+.cv-font-mono * {
+  font-family: 'Courier New', Courier, monospace !important;
+}
+
+/* Spacing densities */
+.cv-spacing-compact {
+  line-height: 1.35;
+}
+.cv-spacing-compact table td,
+.cv-spacing-compact table th {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+.cv-spacing-compact .experience-item,
+.cv-spacing-compact .geo-experience-item {
+  margin-bottom: 10px !important;
+}
+.cv-spacing-compact .sec-banner,
+.cv-spacing-compact .section-heading {
+  margin-top: 7px !important;
+  margin-bottom: 4px !important;
+}
+
+.cv-spacing-relaxed {
+  line-height: 1.65;
+}
+.cv-spacing-relaxed table td,
+.cv-spacing-relaxed table th {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+.cv-spacing-relaxed .experience-item,
+.cv-spacing-relaxed .geo-experience-item {
+  margin-bottom: 20px !important;
+}
+
+/* =========================================================
+   INDEPENDENT SCROLLBAR STYLING
+   Left options panel scrolls smoothly while right preview stays fixed
+   ========================================================= */
+
+.form-panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #38bdf8 #0f172a;
+}
+
+.form-panel-scroll::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.form-panel-scroll::-webkit-scrollbar-track {
+  background: #090d16;
+  border-radius: 4px;
+}
+
+.form-panel-scroll::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+  border: 1px solid #334155;
+}
+
+.form-panel-scroll::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
+}
+
+/* Custom scrollbar for preview canvas */
+.preview-panel::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.preview-panel::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+.preview-panel::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.preview-panel::-webkit-scrollbar-thumb:hover {
+  background: #38bdf8;
+}
+
+

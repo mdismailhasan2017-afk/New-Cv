@@ -1,0 +1,6 @@
+{
+  "name": "Pro CV Builder",
+  "description": "Professional multi-format CV and resume builder with 10 Gulf, Technical, and Corporate templates, Times New Roman font customization, and instant A4 PDF and JPG export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
