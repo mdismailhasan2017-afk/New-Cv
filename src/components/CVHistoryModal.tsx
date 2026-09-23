@@ -581,7 +581,7 @@ export const CVHistoryModal: React.FC<CVHistoryModalProps> = ({
                       <span className="text-slate-400">জন্ম তারিখ:</span> {selectedPreview.data.dob || 'N/A'}
                     </div>
                     <div>
-                      <span className="text-slate-400">মোবাইল:</span> {selectedPreview.data.mobile || 'N/A'}
+                      <span className="text-slate-400">টেলিফোন নং:</span> {selectedPreview.data.mobile || 'N/A'}
                     </div>
                     <div className="sm:col-span-2">
                       <span className="text-slate-400">স্থায়ী ঠিকানা:</span> {selectedPreview.data.permanentAddress || 'N/A'}

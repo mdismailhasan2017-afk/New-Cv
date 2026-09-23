@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
 CURRICULUM VITAE
 ${cvData.name.toUpperCase()}
 ${cvData.jobTitle}
-Mobile: ${cvData.mobile} | Email: ${cvData.email}
+Telephone No: ${cvData.mobile} | Email: ${cvData.email}
 
 OBJECTIVE:
 ${cvData.objective}
@@ -137,7 +137,7 @@ ${cvData.skills.join(', ')}
                 PRO CV BUILDER
               </h1>
               <span className="text-[10px] font-bold uppercase bg-slate-800 text-sky-300 border-l-2 border-sky-400 px-2 py-0.5 rounded-xs tracking-wider">
-                10 FORMATS
+                {TEMPLATE_OPTIONS.length} FORMATS
               </span>
             </div>
             <p className="text-[11px] text-slate-400 hidden sm:block tracking-wide">Geometric & Gulf CV Workspace</p>

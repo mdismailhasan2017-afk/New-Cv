@@ -12,13 +12,14 @@ import { PreviewContainer } from './components/PreviewContainer';
 import { SettingsModal } from './components/SettingsModal';
 import { PrintModal } from './components/PrintModal';
 import { CVHistoryModal } from './components/CVHistoryModal';
-import { Edit3, Eye, Printer, Sparkles, CheckCircle2, History, Camera, FileText, ChevronUp, ChevronDown, Sliders } from 'lucide-react';
+import { Edit3, Eye, Printer, Sparkles, CheckCircle2, History, Camera, FileText, ChevronUp, ChevronDown, Sliders, ChevronLeft, ChevronRight, X, RotateCcw } from 'lucide-react';
 import {
   autoSaveCVToHistory,
   saveCVToHistory,
   getTotalCVsCount,
 } from './utils/historyStorage';
 import { getTotalPassportScansCount } from './utils/passportHistory';
+import { cleanExcessiveLocalStorageQuota } from './utils/imageCompressor';
 
 const FORM_QUICK_SECTIONS = [
   { id: 'scanner', label: 'পাসপোর্ট স্ক্যানার', icon: '📷', elementId: 'section-scanner', sectionKey: '' },
@@ -48,14 +49,20 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed) {
+          // Clear Emergency Contact from CV data as requested by user
+          parsed.emergencyContactName = '';
+          parsed.emergencyContactRelation = '';
+          parsed.emergencyContactPhone = '';
+          parsed.emergencyContactAddress = '';
+
           // Delete additionalPages (Page 2) as requested by user
           if (parsed.additionalPages && parsed.additionalPages.length > 0) {
             parsed.additionalPages = [];
-            try {
-              localStorage.setItem('pro_cv_builder_data', JSON.stringify(parsed));
-            } catch {
-              // ignore
-            }
+          }
+          try {
+            localStorage.setItem('pro_cv_builder_data', JSON.stringify(parsed));
+          } catch {
+            // ignore
           }
           if (!parsed.jobTitle) {
             parsed.jobTitle = 'Position Applied For: ';
@@ -87,7 +94,26 @@ export default function App() {
     try {
       const saved = localStorage.getItem('pro_cv_builder_style');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          ...parsed,
+          sectionGap: parsed.sectionGap || parsed.spacing || 'normal',
+          headerAlign: parsed.headerAlign || 'center',
+          paperSize: parsed.paperSize || 'a4',
+          margins: parsed.margins || 'narrow',
+          orientation: parsed.orientation || 'portrait',
+          columns: parsed.columns || 'one',
+          indentLeft: parsed.indentLeft ?? 0,
+          indentRight: parsed.indentRight ?? 0,
+          spacingBefore: parsed.spacingBefore ?? 0,
+          spacingAfter: parsed.spacingAfter ?? 8,
+          lineSpacing: parsed.lineSpacing ?? 1.15,
+          textAlign: parsed.textAlign || 'left',
+          isBold: parsed.isBold ?? false,
+          isItalic: parsed.isItalic ?? false,
+          isUnderline: parsed.isUnderline ?? false,
+          showBullets: parsed.showBullets ?? true,
+        };
       }
     } catch {
       // Fallback
@@ -97,7 +123,20 @@ export default function App() {
       fontFamily: 'times',
       fontSize: 'base',
       spacing: 'normal',
+      sectionGap: 'normal',
+      headerAlign: 'center',
       showPhoto: true,
+      paperSize: 'a4',
+      margins: 'narrow',
+      orientation: 'portrait',
+      columns: 'one',
+      indentLeft: 0,
+      indentRight: 0,
+      spacingBefore: 0,
+      spacingAfter: 8,
+      lineSpacing: 1.15,
+      textAlign: 'left',
+      showBullets: true,
     };
   });
 
@@ -111,6 +150,21 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const formScrollRef = React.useRef<HTMLDivElement>(null);
+  const optionScrollTrackRef = React.useRef<HTMLDivElement>(null);
+  const [isOptionScrollVisible, setIsOptionScrollVisible] = useState<boolean>(true);
+  const [showFloatingScrollControls, setShowFloatingScrollControls] = useState<boolean>(true);
+
+  const handleScrollOptionsLeft = () => {
+    if (optionScrollTrackRef.current) {
+      optionScrollTrackRef.current.scrollBy({ left: -220, behavior: 'smooth' });
+    }
+  };
+
+  const handleScrollOptionsRight = () => {
+    if (optionScrollTrackRef.current) {
+      optionScrollTrackRef.current.scrollBy({ left: 220, behavior: 'smooth' });
+    }
+  };
 
   const handleJumpToSection = (sectionKey: string, elementId: string) => {
     if (viewMode === 'preview') {
@@ -145,8 +199,11 @@ export default function App() {
     handleJumpToSection('', 'section-scanner');
   };
 
-  // Sync lifetime counters whenever history updates
+  // Sync lifetime counters whenever history updates & ensure quota hygiene
   useEffect(() => {
+    // Proactively clean and guard storage quota on app startup
+    cleanExcessiveLocalStorageQuota();
+
     const syncCounters = () => {
       setCvCount(getTotalCVsCount());
       setPassportScanCount(getTotalPassportScansCount());
@@ -205,6 +262,24 @@ export default function App() {
         : [],
     }));
     showToast('পেজ ২ ডিলিট করা হয়েছে!');
+  };
+
+  const handleAddNewPage = () => {
+    const newPageNum = 2 + (cvData.additionalPages?.length || 0);
+    const newPage = {
+      id: `page_${Date.now()}`,
+      title: `PAGE ${newPageNum}: ADDITIONAL INFORMATION`,
+      subtitle: 'সার্টিফিকেট, অভিজ্ঞতা ও অতিরিক্ত বিবরণ',
+      content: '',
+      items: ['অতিরিক্ত অভিজ্ঞতা বা কোর্স বিবরণ ১', 'অতিরিক্ত অভিজ্ঞতা বা কোর্স বিবরণ ২'],
+      images: [],
+      showSignature: true,
+    };
+    setCvData((prev) => ({
+      ...prev,
+      additionalPages: [...(prev.additionalPages || []), newPage],
+    }));
+    showToast(`📄 পেজ ${newPageNum} (A4) সফলভাবে যোগ করা হয়েছে!`);
   };
 
   const showToast = (msg: string) => {
@@ -329,7 +404,19 @@ export default function App() {
             <span className="font-bold flex items-center gap-1.5 text-slate-100">
               <Edit3 className="w-4 h-4 text-sky-400" /> সিভি তথ্য এডিটর
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setIsOptionScrollVisible(!isOptionScrollVisible)}
+                className={`text-[11px] px-2 py-0.5 rounded border transition flex items-center gap-1 cursor-pointer font-medium ${
+                  isOptionScrollVisible
+                    ? 'bg-sky-950 text-sky-300 border-sky-800 hover:bg-sky-900'
+                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+                }`}
+                title="অপশন স্ক্রল বার দেখান বা লুকান"
+              >
+                <Sliders className="w-3 h-3" />
+                <span>অপশন স্ক্রল: {isOptionScrollVisible ? 'চালু' : 'লুকান'}</span>
+              </button>
               <button
                 onClick={() => handleOpenHistoryWithTab('cv')}
                 className="text-[11px] bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-sky-300 flex items-center gap-1 cursor-pointer transition border border-slate-700"
@@ -347,6 +434,14 @@ export default function App() {
                 <span>স্ক্যান: <strong>{passportScanCount}</strong></span>
               </button>
               <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="text-[11px] bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-amber-300 hover:text-amber-200 flex items-center gap-1 cursor-pointer transition border border-slate-700"
+                title="সিভির সব ফন্ট সাইজ ও গ্যাপ কন্ট্রোল সেটিংস খুলুন"
+              >
+                <Sliders className="w-3 h-3 text-amber-400" />
+                <span>ফন্ট ও গ্যাপ</span>
+              </button>
+              <button
                 onClick={() => handleLoadPreset(PRESET_ALAMEN_PASSPORT)}
                 className="text-[11px] hover:underline flex items-center gap-1 text-emerald-400 cursor-pointer pl-1 font-medium"
                 title="ALAMEN পাসপোর্ট তথ্য লোড করুন"
@@ -356,23 +451,59 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick Option Scroll / Jump Bar */}
-          <div className="shrink-0 bg-slate-950/95 border-b border-slate-800/90 px-3 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none shadow-inner z-10">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1 pr-1">
-              <Sliders className="w-3 h-3 text-sky-400" /> অপশন স্ক্রল:
-            </span>
-            {FORM_QUICK_SECTIONS.map((item) => (
+          {/* Quick Option Scroll / Move Bar */}
+          {isOptionScrollVisible && (
+            <div className="shrink-0 bg-slate-950/95 border-b border-slate-800/90 px-2 py-1.5 flex items-center gap-1 shadow-inner z-10 select-none">
               <button
-                key={item.id}
-                onClick={() => handleJumpToSection(item.sectionKey, item.elementId)}
-                className="text-[11px] px-2.5 py-1 rounded-md bg-slate-900 hover:bg-sky-950 hover:text-sky-300 text-slate-300 border border-slate-800 hover:border-sky-600/50 shrink-0 transition flex items-center gap-1 cursor-pointer font-medium whitespace-nowrap active:scale-95"
-                title={`ক্লিক করে "${item.label}" সেকশনে স্ক্রল করুন`}
+                onClick={handleScrollOptionsLeft}
+                className="p-1 rounded bg-slate-900 hover:bg-sky-900 text-slate-400 hover:text-white border border-slate-800 shrink-0 transition cursor-pointer"
+                title="বামে অপশন স্ক্রল করুন"
               >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
-            ))}
-          </div>
+
+              <div
+                ref={optionScrollTrackRef}
+                onWheel={(e) => {
+                  if (e.deltaY && optionScrollTrackRef.current) {
+                    optionScrollTrackRef.current.scrollLeft += e.deltaY;
+                  }
+                }}
+                className="flex-1 flex items-center gap-1.5 overflow-x-auto scroll-smooth py-0.5 px-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900"
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1 pr-1">
+                  <Sliders className="w-3 h-3 text-sky-400" /> অপশন স্ক্রল:
+                </span>
+                {FORM_QUICK_SECTIONS.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleJumpToSection(item.sectionKey, item.elementId)}
+                    className="text-[11px] px-2 py-1 rounded-md bg-slate-900 hover:bg-sky-950 hover:text-sky-300 text-slate-300 border border-slate-800 hover:border-sky-600/50 shrink-0 transition flex items-center gap-1 cursor-pointer font-medium whitespace-nowrap active:scale-95"
+                    title={`ক্লিক করে "${item.label}" সেকশনে স্ক্রল করুন`}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={handleScrollOptionsRight}
+                className="p-1 rounded bg-slate-900 hover:bg-sky-900 text-slate-400 hover:text-white border border-slate-800 shrink-0 transition cursor-pointer"
+                title="ডানে অপশন স্ক্রল করুন"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                onClick={() => setIsOptionScrollVisible(false)}
+                className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-900 transition shrink-0 ml-0.5"
+                title="অপশন স্ক্রল বার লুকান"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Independent Scrollable Form Content */}
           <div
@@ -388,22 +519,31 @@ export default function App() {
           </div>
 
           {/* Floating Scroll Controls (Top & Bottom) inside Left Panel */}
-          <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-1.5 pointer-events-auto">
-            <button
-              onClick={handleScrollTop}
-              className="w-8 h-8 rounded-full bg-slate-800/90 hover:bg-sky-600 text-slate-300 hover:text-white border border-slate-700 shadow-lg flex items-center justify-center transition cursor-pointer active:scale-90"
-              title="এক ক্লিকে একদম উপরে যান (Scroll to Top)"
-            >
-              <ChevronUp className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleScrollBottom}
-              className="w-8 h-8 rounded-full bg-slate-800/90 hover:bg-sky-600 text-slate-300 hover:text-white border border-slate-700 shadow-lg flex items-center justify-center transition cursor-pointer active:scale-90"
-              title="এক ক্লিকে একদম নিচে যান (Scroll to Bottom)"
-            >
-              <ChevronDown className="w-4 h-4" />
-            </button>
-          </div>
+          {showFloatingScrollControls && (
+            <div className="absolute bottom-4 right-4 z-20 flex flex-col items-center gap-1.5 pointer-events-auto bg-slate-900/85 p-1 rounded-full border border-slate-800 shadow-xl backdrop-blur-xs">
+              <button
+                onClick={handleScrollTop}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white border border-slate-700 shadow-sm flex items-center justify-center transition cursor-pointer active:scale-90"
+                title="এক ক্লিকে একদম উপরে যান (Scroll to Top)"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleScrollBottom}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white border border-slate-700 shadow-sm flex items-center justify-center transition cursor-pointer active:scale-90"
+                title="এক ক্লিকে একদম নিচে যান (Scroll to Bottom)"
+              >
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowFloatingScrollControls(false)}
+                className="w-5 h-5 rounded-full text-slate-500 hover:text-rose-400 flex items-center justify-center transition cursor-pointer"
+                title="এই বাটনগুলো লুকান"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right Preview Panel - Fixed & Stationary CV Viewport */}
@@ -417,8 +557,11 @@ export default function App() {
             templateId={templateId}
             onTemplateChange={setTemplateId}
             styleConfig={styleConfig}
+            onStyleChange={setStyleConfig}
+            onOpenSettings={() => setIsSettingsOpen(true)}
             onPrint={handlePrint}
             onDeleteAdditionalPage={handleDeleteAdditionalPage}
+            onAddNewPage={handleAddNewPage}
           />
         </div>
 
@@ -488,6 +631,7 @@ export default function App() {
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
         cvData={cvData}
+        paperSize={styleConfig.paperSize}
       />
 
       {/* Toast Notification */}

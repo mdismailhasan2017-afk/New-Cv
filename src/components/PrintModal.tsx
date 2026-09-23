@@ -12,16 +12,17 @@ import {
   Image as ImageIcon,
   FileText,
 } from 'lucide-react';
-import { CVData } from '../types';
-import { exportCVToPDF, exportCVToJPG, openPrintWindow } from '../utils/pdfExport';
+import { CVData, CVPaperSize } from '../types';
+import { exportCVToPDF, exportCVToJPG, openPrintWindow, detectCurrentPaperSize } from '../utils/pdfExport';
 
 interface PrintModalProps {
   isOpen: boolean;
   onClose: () => void;
   cvData?: CVData;
+  paperSize?: CVPaperSize;
 }
 
-export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData }) => {
+export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData, paperSize }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState<'pdf' | 'jpg' | null>(null);
   const [progressMsg, setProgressMsg] = useState('');
@@ -34,6 +35,8 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData 
   const defaultFilename = `${candidateName.replace(/\s+/g, '_')}_Resume.pdf`;
   const additionalPagesCount = cvData?.additionalPages?.length || 0;
   const totalPages = 1 + additionalPagesCount;
+  const currentPaper = paperSize || detectCurrentPaperSize();
+  const isA4 = currentPaper === 'a4';
 
   const handleDownloadPDF = async () => {
     setIsExporting(true);
@@ -44,7 +47,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData 
     try {
       await exportCVToPDF(defaultFilename, (msg) => {
         setProgressMsg(msg);
-      });
+      }, currentPaper);
       setExportSuccess(true);
       setTimeout(() => {
         setIsExporting(false);
@@ -67,7 +70,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData 
     try {
       await exportCVToJPG(candidateName, pageIndex, (msg) => {
         setProgressMsg(msg);
-      });
+      }, currentPaper);
       setExportSuccess(true);
       setTimeout(() => {
         setIsExporting(false);
@@ -109,7 +112,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData 
                 সিভি প্রিন্ট ও ডাউনলোড (PDF / JPG)
               </h3>
               <p className="text-[11px] text-slate-400">
-                A4 স্ট্যান্ডার্ড ফরম্যাট • মোট {totalPages}টি A4 পেজ
+                A4 (8.2 × 11.7 in; 210 × 297 mm) • 8.27" × 11.69" • মোট {totalPages}টি পেজ
               </p>
             </div>
           </div>
@@ -168,7 +171,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData 
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  Times New Roman ও অন্যান্য ফন্টে শার্প ও ক্রিস্প A4 মাল্টি-পেজ PDF ফাইল (ফন্ট ভাঙা বা নষ্ট হওয়া সম্পূর্ণ সমাধান করা হয়েছে)।
+                  Times New Roman ও অন্যান্য ফন্টে শার্প ও ক্রিস্প A4 (8.27" × 11.69" • 210 × 297 mm) মাল্টি-পেজ PDF ফাইল (ফন্ট ভাঙা বা নষ্ট হওয়া সম্পূর্ণ সমাধান করা হয়েছে)।
                 </p>
               </div>
             </div>
@@ -201,12 +204,16 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData 
                     <ImageIcon className="w-4 h-4 text-emerald-400" /> ২. JPG ইমেজ (ছবি) ডাউনলোড করুন
                   </span>
                   <span className="bg-emerald-500/20 text-emerald-300 text-[9px] font-bold px-1.5 py-0.5 rounded">
-                    নতুন অপশন
+                    A4 (8.27" × 11.69")
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  সোশ্যাল মিডিয়া, হোয়াটসঅ্যাপ, ইমেইল বা এজেন্সিতে পাঠানোর জন্য ঝকঝকে 300 DPI হাই-কোয়ালিটি JPG ছবি।
+                <p className="text-[11px] text-slate-300">
+                  আন্তর্জাতিক স্ট্যান্ডার্ড <strong className="text-emerald-300">A4 (8.27" × 11.69" • 210 × 297 mm)</strong> সাইজে <strong className="text-white">২৪৮০ × ৩৫০৮ পিক্সেল, ৩০০ DPI</strong> রেজ্যুলেশনে ডাউনলোড হবে।
                 </p>
+                <div className="mt-1 flex items-center gap-1.5 text-[10px] text-slate-400 font-mono">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>300 DPI JFIF মেটাডাটা সহ • ওয়ার্ড, ফটোশপ ও সরাসরি প্রিন্টের জন্য শতভাগ উপযুক্ত</span>
+                </div>
               </div>
             </div>
 
@@ -221,12 +228,12 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData 
                 {isExporting && exportType === 'jpg' ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>JPG ছবি প্রসেস হচ্ছে...</span>
+                    <span>A4 JPG (২৪৮০ × ৩৫০৮ px) প্রসেস হচ্ছে...</span>
                   </>
                 ) : (
                   <>
                     <Download className="w-3.5 h-3.5" />
-                    <span>{totalPages > 1 ? `সবগুলো পেজ JPG ডাউনলোড (${totalPages}টি পেজ)` : 'সিভি JPG ডাউনলোড করুন'}</span>
+                    <span>{totalPages > 1 ? `সবগুলো পেজ A4 JPG ডাউনলোড (${totalPages}টি পেজ • ৩০০ DPI)` : 'A4 JPG ডাউনলোড করুন (২৪৮০ × ৩৫০৮ px • ৩০০ DPI)'}</span>
                   </>
                 )}
               </button>
@@ -241,7 +248,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData 
                     onClick={() => handleDownloadJPG(0)}
                     className="px-2.5 py-1 bg-slate-800 hover:bg-slate-750 text-emerald-300 text-xs font-semibold rounded border border-slate-700 hover:border-emerald-500/50 transition cursor-pointer"
                   >
-                    পেজ ১ (মেইন সিভি)
+                    পেজ ১ (A4 • 300 DPI)
                   </button>
                   {cvData?.additionalPages?.map((page, idx) => (
                     <button
@@ -251,7 +258,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, cvData 
                       onClick={() => handleDownloadJPG(idx + 1)}
                       className="px-2.5 py-1 bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold rounded border border-slate-700 hover:border-emerald-500/50 transition cursor-pointer"
                     >
-                      পেজ {idx + 2} ({page.title.length > 10 ? `${page.title.slice(0, 10)}...` : page.title})
+                      পেজ {idx + 2} (A4 • 300 DPI)
                     </button>
                   ))}
                 </div>

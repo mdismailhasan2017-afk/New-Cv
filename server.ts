@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -164,9 +164,8 @@ IMPORTANT RULES:
       }
 
       const candidateModels = [
-        'gemini-3.6-flash',
-        'gemini-3.8-flash',
         'gemini-3.1-flash-lite',
+        'gemini-3.8-flash',
       ];
 
       let lastError: any = null;
@@ -175,11 +174,16 @@ IMPORTANT RULES:
 
       for (const modelName of candidateModels) {
         try {
+          const isLite = modelName.includes('lite');
           const response = await ai.models.generateContent({
             model: modelName,
             contents,
             config: {
               responseMimeType: 'application/json',
+              temperature: 0.1,
+              thinkingConfig: {
+                thinkingLevel: isLite ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW,
+              },
               responseSchema: {
                 type: Type.OBJECT,
                 properties: {
@@ -214,6 +218,7 @@ IMPORTANT RULES:
                   emergencyContactRelation: { type: Type.STRING, description: 'Relationship e.g. MOTHER' },
                   emergencyContactPhone: { type: Type.STRING, description: 'Phone number e.g. +8801700903918' },
                   emergencyContactAddress: { type: Type.STRING, description: 'Emergency contact address' },
+                  telephoneNo: { type: Type.STRING, description: 'Candidate telephone or mobile number found on passport or emergency contact e.g. +8801780609899' },
                   rawTextSummary: { type: Type.STRING, description: 'Brief transcription summary of visible text' },
                 },
                 required: ['passportNumber', 'fullName'],
@@ -240,6 +245,9 @@ IMPORTANT RULES:
           extracted.presentAddress = formatBangladeshiAddressServer(extracted.presentAddress);
         } else if (extracted.permanentAddress) {
           extracted.presentAddress = extracted.permanentAddress;
+        }
+        if (!extracted.telephoneNo && extracted.emergencyContactPhone) {
+          extracted.telephoneNo = extracted.emergencyContactPhone;
         }
         return res.json({
           success: true,

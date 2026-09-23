@@ -20,6 +20,9 @@ import {
   Phone,
   Layers,
   ArrowRight,
+  Clipboard,
+  FolderOpen,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { CVData } from '../types';
 import {
@@ -29,6 +32,7 @@ import {
   formatBangladeshiAddress,
 } from '../utils/passportScanner';
 import { savePassportScanToHistory } from '../utils/passportHistory';
+import { createMicroThumbnail } from '../utils/imageCompressor';
 import { toCapitalCase, toTitleCase, transformCase, TextCaseMode } from '../utils/textTransform';
 
 interface InlinePassportScannerProps {
@@ -98,6 +102,7 @@ export interface ExtractedPassportFields {
   emergencyContactName: string;
   emergencyContactRelation: string;
   emergencyContactPhone: string;
+  telephoneNo?: string;
 }
 
 export const InlinePassportScanner: React.FC<InlinePassportScannerProps> = ({
@@ -176,66 +181,167 @@ export const InlinePassportScanner: React.FC<InlinePassportScannerProps> = ({
       emergencyContactName: transformCase(result.emergencyContactName || '', mode),
       emergencyContactRelation: transformCase(result.emergencyContactRelation || '', mode),
       emergencyContactPhone: result.emergencyContactPhone || '',
+      telephoneNo: result.telephoneNo || result.emergencyContactPhone || '',
     };
     return fields;
   };
 
+function isImageFile(file: File | Blob, name?: string): boolean {
+  if (file.type && file.type.toLowerCase().startsWith('image/')) return true;
+  const fileName = (file as File).name || name || '';
+  const ext = fileName.toLowerCase().split('.').pop();
+  return ['jpg', 'jpeg', 'png', 'webp', 'jfif', 'bmp', 'tiff', 'gif'].includes(ext || '');
+}
+
+function dataUrlToFile(dataUrl: string, filename = 'pasted_passport.jpg'): File {
+  try {
+    const parts = dataUrl.split(',');
+    const mimeMatch = parts[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const bstr = atob(parts[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  } catch {
+    return new File([], filename, { type: 'image/jpeg' });
+  }
+}
+
   // -------------------------------------------------------------
-  // 1. JPG PHOTO COPY & PASTE (CLIPBOARD LISTENER)
+  // 1. JPG PHOTO COPY & PASTE (GLOBAL & LOCAL CLIPBOARD LISTENER)
   // -------------------------------------------------------------
-  const handleImageFile = (file: File, successNote?: string) => {
-    if (!file.type.startsWith('image/')) {
+  const handleImageFile = (file: File | Blob, successNote?: string, customName?: string) => {
+    const fileName = (file as File).name || customName || 'pasted_passport.jpg';
+    let mimeType = file.type;
+
+    if (!isImageFile(file, fileName)) {
       setErrorMessage('দয়া করে একটি সঠিক ইমেজ ফাইল দিন (JPG, JPEG, PNG, WebP)।');
       return;
     }
+
+    if (!mimeType || !mimeType.startsWith('image/')) {
+      const ext = fileName.toLowerCase().split('.').pop() || 'jpg';
+      mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+    }
+
+    const finalFile = (file instanceof File && file.type)
+      ? file
+      : new File([file], fileName, { type: mimeType });
+
     setErrorMessage(null);
-    setSelectedImage(file);
+    setSelectedImage(finalFile);
     setActiveTab('upload');
+    setIsOpen(true);
     setIsAppliedToCV(false);
 
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target?.result as string);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(finalFile);
 
-    setSuccessMessage(successNote || '📷 JPG ছবি নির্বাচন করা হয়েছে! নিচে "স্ক্যান করুন" বাটনে ক্লিক করুন।');
+    setSuccessMessage(successNote || '📷 JPG ছবি সফলভাবে পেস্ট হয়েছে! এবার "স্ক্যান করুন" বাটনে ক্লিক করুন।');
     setTimeout(() => setSuccessMessage(null), 4000);
   };
 
-  // Intercept Paste Event (Ctrl+V) anywhere on the scanner container or window
-  const handleContainerPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    const clipboardData = e.clipboardData;
-    if (!clipboardData) return;
+  const extractImageFromClipboard = (clipboardData: DataTransfer | null): File | null => {
+    if (!clipboardData) return null;
 
-    // Check for Image Files in clipboard (e.g. copied JPG photo)
-    if (clipboardData.items) {
+    // 1. Check items (screenshots, copied images, browser copy-image)
+    if (clipboardData.items && clipboardData.items.length > 0) {
       for (let i = 0; i < clipboardData.items.length; i++) {
         const item = clipboardData.items[i];
-        if (item.type.startsWith('image/')) {
-          e.preventDefault();
+        if (item.type && item.type.toLowerCase().startsWith('image/')) {
           const file = item.getAsFile();
-          if (file) {
-            handleImageFile(file, '📷 ক্লিপবোর্ড থেকে JPG ফটো পেস্ট করা হয়েছে!');
-            return;
-          }
+          if (file) return file;
+        }
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file && isImageFile(file)) return file;
         }
       }
     }
 
+    // 2. Check files (copied files from desktop or folder)
     if (clipboardData.files && clipboardData.files.length > 0) {
-      const file = clipboardData.files[0];
-      if (file.type.startsWith('image/')) {
-        e.preventDefault();
-        handleImageFile(file, '📷 ক্লিপবোর্ড থেকে JPG ফটো পেস্ট করা হয়েছে!');
-        return;
+      for (let i = 0; i < clipboardData.files.length; i++) {
+        const file = clipboardData.files[i];
+        if (isImageFile(file)) {
+          return file;
+        }
       }
     }
 
+    // 3. Check for HTML containing an image tag
+    try {
+      const html = clipboardData.getData('text/html');
+      if (html) {
+        const match = html.match(/<img[^>]+src=["'](data:image\/[^"']+|https?:\/\/[^"']+)["']/i);
+        if (match && match[1] && match[1].startsWith('data:image/')) {
+          return dataUrlToFile(match[1], 'pasted_web_image.jpg');
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    // 4. Check for plain text starting with data:image/
+    try {
+      const text = clipboardData.getData('text/plain');
+      if (text && text.trim().startsWith('data:image/')) {
+        return dataUrlToFile(text.trim(), 'pasted_data_url.jpg');
+      }
+    } catch {
+      // ignore
+    }
+
+    return null;
+  };
+
+  // Global window paste listener: Pressing Ctrl+V anywhere pastes the copied JPG!
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      const imageFile = extractImageFromClipboard(e.clipboardData);
+      if (imageFile) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        handleImageFile(imageFile, '📷 JPG ছবি সফলভাবে পেস্ট হয়েছে!');
+        setIsOpen(true);
+        setActiveTab('upload');
+
+        setTimeout(() => {
+          const el = document.getElementById('inline-passport-scanner');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            el.classList.add('ring-2', 'ring-sky-400');
+            setTimeout(() => el.classList.remove('ring-2', 'ring-sky-400'), 1500);
+          }
+        }, 50);
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste, true);
+    return () => {
+      window.removeEventListener('paste', handleGlobalPaste, true);
+    };
+  }, []);
+
+  // Intercept Paste Event (Ctrl+V) directly on scanner container
+  const handleContainerPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const imageFile = extractImageFromClipboard(e.clipboardData);
+    if (imageFile) {
+      e.preventDefault();
+      handleImageFile(imageFile, '📷 ক্লিপবোর্ড থেকে JPG ফটো পেস্ট করা হয়েছে!');
+      return;
+    }
+
     // If it's pure text and we are in paste tab, allow normal paste or capture
-    const pastedStr = clipboardData.getData('text');
+    const pastedStr = e.clipboardData?.getData('text');
     if (pastedStr && pastedStr.trim()) {
-      // If user pasted text while on image tab, switch or ask
       if (activeTab === 'paste') {
         setPastedText(pastedStr);
       }
@@ -245,8 +351,11 @@ export const InlinePassportScanner: React.FC<InlinePassportScannerProps> = ({
   // Dedicated Button: "ক্লিপবোর্ড থেকে JPG ছবি পেস্ট করুন"
   const handlePasteImageFromClipboard = async () => {
     setErrorMessage(null);
-    try {
-      if (navigator.clipboard && navigator.clipboard.read) {
+    setSuccessMessage(null);
+
+    // Method 1: Try modern navigator.clipboard.read()
+    if (navigator.clipboard && navigator.clipboard.read) {
+      try {
         const items = await navigator.clipboard.read();
         for (const item of items) {
           const imageType = item.types.find((t) => t.startsWith('image/'));
@@ -257,13 +366,31 @@ export const InlinePassportScanner: React.FC<InlinePassportScannerProps> = ({
             return;
           }
         }
-        setErrorMessage('ক্লিপবোর্ডে কোনো ছবি (JPG/PNG) পাওয়া যায়নি। দয়া করে ছবি কপি (Copy Image) করে এখানে পেস্ট (Ctrl+V) করুন।');
-      } else {
-        setErrorMessage('ব্রাউজার থেকে সরাসরি ক্লিপবোর্ড ছবি পড়ার পারমিশন নেই। দয়া করে এখানে কীবোর্ডের Ctrl + V চাপুন।');
+      } catch (err) {
+        console.warn('Clipboard read API error:', err);
       }
-    } catch {
-      setErrorMessage('ক্লিপবোর্ডে ছবি পাওয়া যায়নি। ছবি কপি করে কীবোর্ডের Ctrl + V চাপুন।');
     }
+
+    // Method 2: Try text for data URL
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      try {
+        const clipText = await navigator.clipboard.readText();
+        if (clipText && clipText.trim().startsWith('data:image/')) {
+          const file = dataUrlToFile(clipText.trim(), 'pasted_data_url.jpg');
+          handleImageFile(file, '📷 ক্লিপবোর্ড থেকে JPG ছবি সফলভাবে পেস্ট হয়েছে!');
+          return;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Method 3: If browser blocks programmatic reading in iframe, focus container and guide
+    if (scannerContainerRef.current) {
+      scannerContainerRef.current.focus();
+    }
+    setSuccessMessage('💡 ছবি কপি করা থাকলে এখন কীবোর্ডে Ctrl + V চাপুন (সরাসরি পেস্ট হয়ে যাবে)');
+    setTimeout(() => setSuccessMessage(null), 5000);
   };
 
   // Dedicated Button: "ক্লিপবোর্ড থেকে টেক্সট পেস্ট করুন"
@@ -409,31 +536,37 @@ NID: 1998191310000000`;
   // -------------------------------------------------------------
   // 4. APPLY FIELDS TO CV STATE & AUTO-SAVE
   // -------------------------------------------------------------
-  const applyFieldsToCV = (
+  const applyFieldsToCV = async (
     fields: ExtractedPassportFields,
     rawResult?: PassportScanResult,
     thumbnail?: string | null
   ) => {
+    const passportPhone = fields.telephoneNo || fields.emergencyContactPhone || '';
     const updates: Partial<CVData> = {
       name: fields.name,
       passportNumber: fields.passportNumber,
+      mobile: passportPhone || cvData.mobile,
       dob: fields.dob,
       dateOfIssue: fields.dateOfIssue,
       dateOfExpiry: fields.dateOfExpiry,
-      placeOfIssue: fields.placeOfIssue,
       placeOfBirth: fields.placeOfBirth,
       fatherName: fields.fatherName,
       motherName: fields.motherName,
       permanentAddress: fields.permanentAddress,
-      presentAddress: fields.presentAddress,
+      presentAddress: '',
       gender: fields.gender,
       nationality: fields.nationality,
       religion: fields.religion,
       maritalStatus: fields.maritalStatus,
       height: fields.height,
       weight: fields.weight,
-      personalNo: fields.personalNo,
-      previousPassportNumber: fields.previousPassportNumber,
+      personalNo: '',
+      previousPassportNumber: '',
+      placeOfIssue: '',
+      emergencyContactName: '',
+      emergencyContactRelation: '',
+      emergencyContactPhone: '',
+      emergencyContactAddress: '',
     };
 
     onApplyData(updates);
@@ -468,7 +601,20 @@ NID: 1998191310000000`;
         confidence: scanConfidence,
         source: scanSource === 'ocr' ? 'local-ocr' : scanSource === 'ai' ? 'gemini-ai' : 'text-parser',
       };
-      savePassportScanToHistory(histData, thumbnail || imagePreview);
+
+      // Safely prepare tiny thumbnail (<10KB) or skip to protect storage quota
+      let microThumb: string | undefined = undefined;
+      if (thumbnail && thumbnail.length <= 12000) {
+        microThumb = thumbnail;
+      } else if (imagePreview) {
+        try {
+          microThumb = await createMicroThumbnail(imagePreview);
+        } catch {
+          // ignore
+        }
+      }
+
+      savePassportScanToHistory(histData, microThumb);
     } catch (err) {
       console.warn('Failed to save to passport history:', err);
     }
@@ -524,18 +670,14 @@ Mother's Name: ${extractedData.motherName}
 Date of Birth: ${extractedData.dob} (${extractedData.age || 'N/A'})
 Date of Issue: ${extractedData.dateOfIssue}
 Date of Expiry: ${extractedData.dateOfExpiry}
-Place of Issue: ${extractedData.placeOfIssue}
 Place of Birth: ${extractedData.placeOfBirth}
 Nationality: ${extractedData.nationality}
 Gender: ${extractedData.gender}
 Religion: ${extractedData.religion}
 Marital Status: ${extractedData.maritalStatus}
 Height & Weight: ${extractedData.height} / ${extractedData.weight}
-NID/Personal No: ${extractedData.personalNo}
-Previous Passport: ${extractedData.previousPassportNumber}
-Permanent Address: ${extractedData.permanentAddress}
-Present Address: ${extractedData.presentAddress}
-Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emergencyContactRelation}) ${extractedData.emergencyContactPhone}`;
+Telephone No: ${extractedData.telephoneNo || extractedData.emergencyContactPhone || ''}
+Permanent Address: ${extractedData.permanentAddress}`.trim();
     navigator.clipboard.writeText(block);
     setSuccessMessage('📋 সম্পূর্ণ তথ্যের সামারি কপি করা হয়েছে!');
     setTimeout(() => setSuccessMessage(null), 3000);
@@ -558,14 +700,14 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-1.5">
-                <span>পাসপোর্ট দ্রুত স্ক্যানার ও ফটো পেস্ট</span>
+                <span>পাসপোর্ট দ্রুত স্ক্যানার</span>
               </h2>
               <span className="text-[10px] bg-sky-950 text-sky-300 border border-sky-700/60 font-mono font-bold px-1.5 py-0.5 rounded">
                 JPG • AI • OCR
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              যে কোনো জায়গা থেকে JPG ফটো কপি করে এখানে সরাসরি পেস্ট (Ctrl+V) করুন অথবা টেক্সট দিন
+              JPG ফটো পেস্ট (Ctrl+V) অথবা টেক্সট থেকে তথ্য স্ক্যান করুন
             </p>
           </div>
         </div>
@@ -602,27 +744,27 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
               <button
                 type="button"
                 onClick={() => setActiveTab('upload')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'upload'
                     ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/20'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                 }`}
               >
                 <Camera className="w-3.5 h-3.5" />
-                <span>📷 JPG ফটো পেস্ট / আপলোড</span>
+                <span>JPG ফটো</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('paste')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'paste'
                     ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/20'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>📋 টেক্সট কপি-পেস্ট</span>
+                <span>টেক্সট ইনপুট</span>
               </button>
             </div>
 
@@ -662,7 +804,7 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
+                accept="image/*,.jpg,.jpeg,.png,.webp,.jfif,.bmp"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleImageFile(file);
@@ -679,69 +821,78 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
                     const file = e.dataTransfer.files?.[0];
                     if (file) handleImageFile(file);
                   }}
-                  className="border-2 border-dashed border-sky-500/40 hover:border-sky-400 bg-slate-950/70 hover:bg-slate-950 rounded-2xl p-6 text-center cursor-pointer transition space-y-3 group relative overflow-hidden"
+                  className="border-2 border-dashed border-sky-500/40 hover:border-sky-400 bg-slate-950/70 hover:bg-slate-950 rounded-xl px-3 py-2 sm:px-3.5 sm:py-2.5 flex items-center justify-between gap-2.5 cursor-pointer transition group shadow-sm"
+                  title="ক্লিক করুন অথবা ড্র্যাগ & ড্রপ / পেস্ট করুন"
                 >
-                  <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-sky-500/20 to-blue-500/10 text-sky-400 flex items-center justify-center group-hover:scale-110 transition shadow-inner">
-                    <UploadCloud className="w-7 h-7" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-slate-100 flex items-center justify-center gap-2">
-                      <span>কপি করা JPG ছবি সরাসরি পেস্ট (Ctrl + V) করুন</span>
-                      <span className="text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/30 px-1.5 py-0.5 rounded font-mono font-normal">
+                  {/* Left: Icon Badge & Keyboard indicator */}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0 border border-sky-500/30 group-hover:scale-105 transition shadow-inner">
+                      <UploadCloud className="w-4 h-4" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5 whitespace-nowrap">
+                        <ImageIcon className="w-3.5 h-3.5 text-sky-400" />
+                        <span>JPG ফটো</span>
+                      </span>
+                      <span
+                        className="text-[10px] font-mono font-bold bg-slate-900 text-sky-300 border border-slate-700/90 px-1.5 py-0.5 rounded shadow-inner"
+                        title="কিবোর্ডে সরাসরি চাপুন"
+                      >
                         Ctrl + V
                       </span>
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      অথবা এখানে ক্লিক করে পাসপোর্ট ফাইল আপলোড করুন (JPG, JPEG, PNG, WebP)
-                    </p>
+                    </div>
                   </div>
 
-                  <div className="pt-2 flex items-center justify-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                  {/* Right: Smart Icon Buttons */}
+                  <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       onClick={handlePasteImageFromClipboard}
-                      className="px-3 py-1.5 bg-sky-950/80 hover:bg-sky-900 text-sky-200 hover:text-white border border-sky-600/60 font-bold text-xs rounded-lg shadow transition flex items-center gap-1.5 cursor-pointer"
+                      className="px-2.5 py-1.5 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+                      title="ক্লিপবোর্ড থেকে সরাসরি JPG ছবি পেস্ট করুন (Ctrl + V)"
                     >
-                      <Copy className="w-3.5 h-3.5 text-sky-400" />
-                      <span>📋 ক্লিপবোর্ড থেকে JPG ছবি পেস্ট করুন</span>
+                      <Clipboard className="w-3.5 h-3.5" />
+                      <span>পেস্ট</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg border border-slate-700 transition cursor-pointer"
+                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+                      title="ফাইল থেকে পাসপোর্ট ছবি নির্বাচন করুন"
                     >
-                      📁 ফাইল সিলেক্ট করুন
+                      <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+                      <span>ফাইল</span>
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 bg-slate-950/90 border border-slate-800 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3.5 w-full sm:w-auto">
+                <div className="p-2.5 sm:p-3 bg-slate-950/90 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     {imagePreview && (
-                      <div className="relative group shrink-0">
+                      <div className="relative shrink-0">
                         <img
                           src={imagePreview}
                           alt="Passport Preview"
-                          className="w-16 h-16 object-cover rounded-xl border border-sky-500/40 shadow-md"
+                          className="w-10 h-10 object-cover rounded-lg border border-sky-500/40 shadow-sm"
                         />
-                        <span className="absolute bottom-0 right-0 bg-sky-600 text-white text-[9px] font-bold px-1 rounded">
+                        <span className="absolute -bottom-1 -right-1 bg-sky-600 text-white text-[8px] font-bold px-1 rounded">
                           JPG
                         </span>
                       </div>
                     )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-bold text-slate-100 truncate">
-                        {selectedImage.name || 'Pasted_Passport_Photo.jpg'}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-100 truncate max-w-[130px] sm:max-w-[200px]">
+                        {selectedImage.name || 'Pasted_Passport.jpg'}
                       </p>
-                      <p className="text-[11px] text-slate-400 flex items-center gap-2">
-                        <span>{(selectedImage.size / 1024).toFixed(1)} KB</span>
+                      <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                        <span>{(selectedImage.size / 1024).toFixed(0)} KB</span>
                         <span>•</span>
-                        <span className="text-emerald-400 font-medium">✓ স্ক্যানের জন্য প্রস্তুত</span>
+                        <span className="text-emerald-400 font-medium">✓ প্রস্তুত</span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
                       onClick={() => {
@@ -749,7 +900,7 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
                         setImagePreview(null);
                         setExtractedData(null);
                       }}
-                      className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-850 rounded-lg transition cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition cursor-pointer"
                       title="ছবি বাদ দিন"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -758,17 +909,17 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
                       type="button"
                       disabled={isScanning}
                       onClick={handleScanImage}
-                      className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-sky-900/30 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="px-3 py-1.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs rounded-lg shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       {isScanning ? (
                         <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                           <span>স্ক্যান হচ্ছে...</span>
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-4 h-4 text-amber-300" />
-                          <span>⚡ এখনই স্ক্যান করুন ও সম্পূর্ণ লিস্ট দেখুন</span>
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          <span>স্ক্যান করুন</span>
                         </>
                       )}
                     </button>
@@ -947,7 +1098,7 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                   {/* Full Name */}
-                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
+                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1 sm:col-span-2">
                     <div className="flex items-center justify-between text-[11px] text-slate-400">
                       <span>পূর্ণ নাম (Full Name)</span>
                       <button
@@ -1007,69 +1158,6 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
                     />
                   </div>
 
-                  {/* Date of Issue */}
-                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>ইস্যু তারিখ (Issue Date)</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopySingleField(extractedData.dateOfIssue, 'issue')}
-                        className="text-slate-500 hover:text-sky-400 transition"
-                      >
-                        {copiedField === 'issue' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={extractedData.dateOfIssue}
-                      onChange={(e) => updateExtractedField('dateOfIssue', e.target.value)}
-                      placeholder="e.g. 13 JUN 2022"
-                      className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-100 outline-none"
-                    />
-                  </div>
-
-                  {/* Date of Expiry */}
-                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>মেয়াদোত্তীর্ণের তারিখ (Expiry Date)</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopySingleField(extractedData.dateOfExpiry, 'expiry')}
-                        className="text-slate-500 hover:text-sky-400 transition"
-                      >
-                        {copiedField === 'expiry' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={extractedData.dateOfExpiry}
-                      onChange={(e) => updateExtractedField('dateOfExpiry', e.target.value)}
-                      placeholder="e.g. 15 Feb 2036"
-                      className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-100 outline-none"
-                    />
-                  </div>
-
-                  {/* Place of Issue */}
-                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>প্রদানের স্থান (Place of Issue)</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopySingleField(extractedData.placeOfIssue, 'poi')}
-                        className="text-slate-500 hover:text-sky-400 transition"
-                      >
-                        {copiedField === 'poi' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={extractedData.placeOfIssue}
-                      onChange={(e) => updateExtractedField('placeOfIssue', e.target.value.toUpperCase())}
-                      placeholder="DIP/DHAKA"
-                      className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-100 outline-none"
-                    />
-                  </div>
-
                   {/* Place of Birth */}
                   <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
                     <div className="flex items-center justify-between text-[11px] text-slate-400">
@@ -1083,33 +1171,64 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
                       className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2.5 py-1 text-xs text-slate-100 outline-none"
                     />
                   </div>
+                </div>
 
-                  {/* Personal No (NID) */}
-                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>পার্সোনাল নং / NID (National ID)</span>
-                    </div>
-                    <input
-                      type="text"
-                      value={extractedData.personalNo}
-                      onChange={(e) => updateExtractedField('personalNo', e.target.value)}
-                      placeholder="e.g. 4164712004"
-                      className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-100 outline-none"
-                    />
+                {/* PASSPORT VALIDITY OPTIONS - Date Of Expiry directly below Date Of Issue */}
+                <div className="mt-2.5 p-3 bg-slate-950/90 border border-sky-500/30 rounded-xl space-y-2.5 shadow-sm">
+                  <div className="text-[11px] font-bold text-sky-300 uppercase tracking-wider flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+                      পাসপোর্টের মেয়াদ ও ইস্যু তারিখ অপশন (Passport Dates)
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-normal">Date Of Issue এর নিচে Date Of Expiry</span>
                   </div>
 
-                  {/* Previous Passport Number */}
-                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>পূর্বের পাসপোর্ট (Previous Pass)</span>
+                  <div className="space-y-2">
+                    {/* অপশন ১: ইস্যুর তারিখ (Date of Issue) */}
+                    <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between text-[11px] text-slate-300">
+                        <span className="font-semibold text-sky-300 flex items-center gap-1.5">
+                          <span>📅</span> ইস্যু তারিখ (Date of Issue)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopySingleField(extractedData.dateOfIssue, 'issue')}
+                          className="text-slate-500 hover:text-sky-400 transition"
+                        >
+                          {copiedField === 'issue' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={extractedData.dateOfIssue}
+                        onChange={(e) => updateExtractedField('dateOfIssue', e.target.value)}
+                        placeholder="e.g. 13 JUN 2022"
+                        className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-100 outline-none"
+                      />
                     </div>
-                    <input
-                      type="text"
-                      value={extractedData.previousPassportNumber}
-                      onChange={(e) => updateExtractedField('previousPassportNumber', e.target.value.toUpperCase())}
-                      placeholder="e.g. AA2328199"
-                      className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-100 outline-none"
-                    />
+
+                    {/* অপশন ২: মেয়াদোত্তীর্ণের তারিখ (Date Of Expiry) - Date of Issue এর নিচে আলাদা অপশন */}
+                    <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between text-[11px] text-slate-300">
+                        <span className="font-semibold text-rose-300 flex items-center gap-1.5">
+                          <span>⏳</span> মেয়াদোত্তীর্ণের তারিখ (Date Of Expiry)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopySingleField(extractedData.dateOfExpiry, 'expiry')}
+                          className="text-slate-500 hover:text-sky-400 transition"
+                        >
+                          {copiedField === 'expiry' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={extractedData.dateOfExpiry}
+                        onChange={(e) => updateExtractedField('dateOfExpiry', e.target.value)}
+                        placeholder="e.g. 15 Feb 2036"
+                        className="w-full bg-slate-950 border border-slate-700/80 focus:border-rose-500 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-100 outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1266,57 +1385,29 @@ Emergency Contact: ${extractedData.emergencyContactName} (${extractedData.emerge
                     />
                   </div>
 
-                  {/* Present Address */}
-                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>বর্তমান ঠিকানা (Present Address)</span>
+                  {/* Candidate Telephone No from Passport */}
+                  <div className="p-2.5 bg-slate-900/90 border border-sky-500/40 rounded-xl space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-sky-400">টেলিফোন নম্বর (Telephone No)</span>
                       <button
                         type="button"
-                        onClick={() => handleCopySingleField(extractedData.presentAddress, 'pres')}
+                        onClick={() => handleCopySingleField(extractedData.telephoneNo || extractedData.emergencyContactPhone || '', 'tel')}
                         className="text-slate-500 hover:text-sky-400 transition"
                       >
-                        {copiedField === 'pres' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {copiedField === 'tel' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                       </button>
                     </div>
-                    <textarea
-                      rows={2}
-                      value={extractedData.presentAddress}
-                      onChange={(e) => updateExtractedField('presentAddress', e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2.5 py-1 text-xs text-slate-100 outline-none resize-none"
-                    />
-                  </div>
-
-                  {/* Emergency Contact Name */}
-                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
-                    <span className="text-[11px] text-slate-400 block">জরুরী যোগাযোগ নাম (Emergency Name)</span>
                     <input
                       type="text"
-                      value={extractedData.emergencyContactName}
-                      onChange={(e) => updateExtractedField('emergencyContactName', e.target.value)}
-                      placeholder="e.g. SHEIKH SHAMSUL ISLAM"
-                      className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2.5 py-1 text-xs text-slate-100 outline-none"
+                      value={extractedData.telephoneNo || extractedData.emergencyContactPhone || ''}
+                      onChange={(e) => {
+                        updateExtractedField('telephoneNo', e.target.value);
+                        updateExtractedField('emergencyContactPhone', e.target.value);
+                      }}
+                      placeholder="+8801700000000"
+                      className="w-full bg-slate-950 border border-sky-500/60 focus:border-sky-400 rounded-lg px-2.5 py-1 text-xs font-mono text-emerald-400 font-bold outline-none"
                     />
-                  </div>
-
-                  {/* Emergency Phone & Relation */}
-                  <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1">
-                    <span className="text-[11px] text-slate-400 block">জরুরী সম্পর্ক ও মোবাইল (Relation & Phone)</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={extractedData.emergencyContactRelation}
-                        onChange={(e) => updateExtractedField('emergencyContactRelation', e.target.value)}
-                        placeholder="সম্পর্ক (e.g. FATHER)"
-                        className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2 py-1 text-xs text-slate-100 outline-none"
-                      />
-                      <input
-                        type="text"
-                        value={extractedData.emergencyContactPhone}
-                        onChange={(e) => updateExtractedField('emergencyContactPhone', e.target.value)}
-                        placeholder="ফোন নম্বর"
-                        className="w-full bg-slate-950 border border-slate-700/80 focus:border-sky-500 rounded-lg px-2 py-1 text-xs font-mono text-slate-100 outline-none"
-                      />
-                    </div>
+                    <p className="text-[10px] text-slate-400">পাসপোর্ট থেকে প্রাপ্ত টেলিফোন নম্বর সিভির "যোগাযোগ ও সাধারণ তথ্য" তে সংরক্ষিত হবে</p>
                   </div>
                 </div>
               </div>

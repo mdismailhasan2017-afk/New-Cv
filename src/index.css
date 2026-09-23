@@ -33,9 +33,12 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(15, 23, 42, 0.08);
   box-sizing: border-box;
   font-size: 10pt;
-  line-height: 1.5;
+  line-height: 1.4;
   margin: 0 auto;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -541,6 +544,314 @@
   padding: 5px 8px;
 }
 
+/* Format 11: Gulf Manpower Agency Biodata (Teal Accent) */
+.fmt-gulf-4 {
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+  padding: 14mm 16mm;
+}
+.fmt-gulf-4 .agency-top-bar {
+  border-bottom: 2px solid #0d9488;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8.5pt;
+  color: #475569;
+}
+.fmt-gulf-4 .agency-badge {
+  background: #0d9488;
+  color: #ffffff;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.8px;
+}
+.fmt-gulf-4 .sec-banner {
+  background: #f0fdfa;
+  border-left: 4px solid #0d9488;
+  border-bottom: 1px solid #ccfbf1;
+  color: #0f766e;
+  font-weight: 800;
+  font-size: 9.5pt;
+  padding: 3px 8px;
+  margin: 10px 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.fmt-gulf-4 table.info-tbl td {
+  padding: 2.5px 4px;
+}
+.fmt-gulf-4 table.info-tbl td.lbl {
+  width: 140px;
+  font-weight: 700;
+  color: #0f766e;
+}
+.fmt-gulf-4 table.grid-tbl th {
+  background-color: #0d9488;
+  color: #ffffff;
+  border: 1px solid #0d9488;
+  padding: 4px 6px;
+  font-weight: 700;
+}
+.fmt-gulf-4 table.grid-tbl td {
+  border: 1px solid #99f6e4;
+  padding: 4px 6px;
+}
+
+/* Format 12: Saudi Arabia / GCC Dual Arabic-English Header (Gold/Amber) */
+.fmt-gulf-5 {
+  font-family: 'Times New Roman', Georgia, serif;
+  padding: 14mm 16mm;
+}
+.fmt-gulf-5 .cv-title-head {
+  text-align: center;
+  border-bottom: 2px solid #b45309;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+.fmt-gulf-5 .arabic-sub {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  color: #92400e;
+  font-weight: 700;
+  direction: rtl;
+  margin-bottom: 2px;
+}
+.fmt-gulf-5 .sec-banner {
+  background: #fef3c7;
+  border-left: 4px solid #b45309;
+  color: #78350f;
+  font-weight: bold;
+  font-size: 9.5pt;
+  padding: 4px 8px;
+  margin: 11px 0 6px 0;
+  letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.fmt-gulf-5 .sec-banner span.ar {
+  font-size: 9pt;
+  color: #92400e;
+  direction: rtl;
+}
+.fmt-gulf-5 table.info-tbl td.lbl {
+  font-weight: bold;
+  color: #78350f;
+  width: 155px;
+}
+.fmt-gulf-5 table.grid-tbl th {
+  background-color: #78350f;
+  color: #ffffff;
+  border: 1px solid #78350f;
+  padding: 5px 6px;
+}
+.fmt-gulf-5 table.grid-tbl td {
+  border: 1px solid #fde68a;
+  padding: 4px 6px;
+}
+
+/* Format 13: GCC Heavy Equipment & Transport Operator (Safety Orange) */
+.fmt-gulf-6 {
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+  padding: 15mm 16mm;
+}
+.fmt-gulf-6 .cv-title-head {
+  text-align: left;
+  border-left: 6px solid #ea580c;
+  padding-left: 12px;
+  margin-bottom: 12px;
+}
+.fmt-gulf-6 .sec-banner {
+  background: #fff7ed;
+  border-left: 4px solid #ea580c;
+  color: #9a3412;
+  font-weight: 800;
+  font-size: 9.5pt;
+  padding: 3px 8px;
+  margin: 10px 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.fmt-gulf-6 table.info-tbl td.lbl {
+  font-weight: 700;
+  color: #9a3412;
+  width: 150px;
+}
+.fmt-gulf-6 table.grid-tbl th {
+  background-color: #1e293b;
+  color: #ffffff;
+  border: 1px solid #1e293b;
+  padding: 4px 6px;
+  font-weight: 700;
+}
+.fmt-gulf-6 table.grid-tbl td {
+  border: 1px solid #cbd5e1;
+  padding: 4px 6px;
+}
+
+/* Format 14: Singapore & Malaysia Work Permit Worker Bio (Cyan) */
+.fmt-tech-4 {
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+  padding: 14mm 16mm;
+}
+.fmt-tech-4 .cv-title-head {
+  text-align: center;
+  border-top: 3px solid #0891b2;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 0;
+  margin-bottom: 12px;
+}
+.fmt-tech-4 .sec-banner {
+  background: #ecfeff;
+  border-left: 4px solid #0891b2;
+  color: #0e7490;
+  font-weight: 800;
+  font-size: 9.5pt;
+  padding: 3px 8px;
+  margin: 10px 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.fmt-tech-4 table.info-tbl td.lbl {
+  font-weight: 700;
+  color: #0e7490;
+  width: 150px;
+}
+.fmt-tech-4 table.grid-tbl th {
+  background-color: #0891b2;
+  color: #ffffff;
+  border: 1px solid #0891b2;
+  padding: 4px 6px;
+  font-weight: 700;
+}
+.fmt-tech-4 table.grid-tbl td {
+  border: 1px solid #cffafe;
+  padding: 4px 6px;
+}
+
+/* Format 15: Oil & Gas / Aramco Technical Spec (Indigo) */
+.fmt-tech-5 {
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+  padding: 15mm 16mm;
+}
+.fmt-tech-5 .cv-title-head {
+  border-bottom: 3px solid #4338ca;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.fmt-tech-5 .sec-banner {
+  background: #eef2ff;
+  border-left: 4px solid #4338ca;
+  color: #3730a3;
+  font-weight: 800;
+  font-size: 9.5pt;
+  padding: 3px 8px;
+  margin: 10px 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.fmt-tech-5 table.info-tbl td.lbl {
+  font-weight: 700;
+  color: #3730a3;
+  width: 150px;
+}
+.fmt-tech-5 table.grid-tbl th {
+  background-color: #4338ca;
+  color: #ffffff;
+  border: 1px solid #4338ca;
+  padding: 4px 6px;
+  font-weight: 700;
+}
+.fmt-tech-5 table.grid-tbl td {
+  border: 1px solid #c7d2fe;
+  padding: 4px 6px;
+}
+
+/* Format 16: International Modern Dual-Tone (Split Layout) */
+.fmt-corp-5 {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+  padding: 0 !important;
+  display: flex;
+}
+.fmt-corp-5 .corp-sidebar {
+  width: 32%;
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 14mm 8mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+}
+.fmt-corp-5 .corp-main {
+  width: 68%;
+  padding: 14mm 10mm;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+.fmt-corp-5 .corp-sec-title-side {
+  border-bottom: 1px solid #475569;
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 9pt;
+  margin: 14px 0 8px 0;
+  padding-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.fmt-corp-5 .corp-sec-title-main {
+  border-bottom: 2px solid #0f172a;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 10pt;
+  margin: 12px 0 6px 0;
+  padding-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+/* Format 17: Formal Government & Embassy Attestation (Charcoal) */
+.fmt-corp-6 {
+  font-family: 'Times New Roman', Georgia, serif;
+  padding: 14mm 16mm;
+  border: 3px double #374151;
+  outline: 1px solid #9ca3af;
+  outline-offset: -5px;
+}
+.fmt-corp-6 .cv-title-head {
+  text-align: center;
+  border-bottom: 1.5px solid #374151;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.fmt-corp-6 .sec-banner {
+  text-align: center;
+  background: #f3f4f6;
+  border-top: 1px solid #374151;
+  border-bottom: 1px solid #374151;
+  color: #111827;
+  font-weight: bold;
+  font-size: 9.5pt;
+  padding: 3px 0;
+  margin: 10px 0 6px 0;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.fmt-corp-6 table.info-tbl td.lbl {
+  font-weight: bold;
+  color: #111827;
+  width: 155px;
+}
+.fmt-corp-6 table.grid-tbl th,
+.fmt-corp-6 table.grid-tbl td {
+  border: 1px solid #374151;
+  padding: 4px 6px;
+}
+.fmt-corp-6 table.grid-tbl th {
+  background-color: #f3f4f6;
+  font-weight: bold;
+}
+
 /* =========================================================
    ADDITIONAL A4 PAGE STYLES
    ========================================================= */
@@ -765,34 +1076,360 @@
 
 /* Spacing densities */
 .cv-spacing-compact {
-  line-height: 1.35;
+  line-height: 1.3 !important;
 }
 .cv-spacing-compact table td,
 .cv-spacing-compact table th {
-  padding-top: 3px !important;
-  padding-bottom: 3px !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
 }
-.cv-spacing-compact .experience-item,
-.cv-spacing-compact .geo-experience-item {
-  margin-bottom: 10px !important;
+
+.cv-spacing-normal {
+  line-height: 1.48 !important;
 }
-.cv-spacing-compact .sec-banner,
-.cv-spacing-compact .section-heading {
-  margin-top: 7px !important;
-  margin-bottom: 4px !important;
+.cv-spacing-normal table td,
+.cv-spacing-normal table th {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
 }
 
 .cv-spacing-relaxed {
-  line-height: 1.65;
+  line-height: 1.68 !important;
 }
 .cv-spacing-relaxed table td,
 .cv-spacing-relaxed table th {
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
+  padding-top: 6.5px !important;
+  padding-bottom: 6.5px !important;
 }
-.cv-spacing-relaxed .experience-item,
-.cv-spacing-relaxed .geo-experience-item {
+
+.cv-spacing-spacious {
+  line-height: 1.88 !important;
+}
+.cv-spacing-spacious table td,
+.cv-spacing-spacious table th {
+  padding-top: 9.5px !important;
+  padding-bottom: 9.5px !important;
+}
+
+/* =========================================================
+   ALL FONTS SIZE SCALING (সব ফন্ট বড় বা ছোট করার স্কেল)
+   ========================================================= */
+
+/* Extra Small (XS - ~85% scale) */
+.cv-size-xs .a4-paper-container {
+  font-size: 8.5pt !important;
+  line-height: 1.35;
+}
+.cv-size-xs h1 {
+  font-size: 18pt !important;
+}
+.cv-size-xs h2,
+.cv-size-xs .section-heading h2,
+.cv-size-xs .geo-heading h2,
+.cv-size-xs .sec-banner {
+  font-size: 9.5pt !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+.cv-size-xs h3 {
+  font-size: 9pt !important;
+}
+.cv-size-xs p,
+.cv-size-xs td,
+.cv-size-xs th,
+.cv-size-xs li,
+.cv-size-xs .summary-text,
+.cv-size-xs .geo-summary-text,
+.cv-size-xs .info-tbl td,
+.cv-size-xs .grid-tbl td,
+.cv-size-xs .company-name,
+.cv-size-xs .job-role {
+  font-size: 8.2pt !important;
+}
+.cv-size-xs .job-date,
+.cv-size-xs .lbl,
+.cv-size-xs table td.lbl,
+.cv-size-xs .contact-icon,
+.cv-size-xs [class*="text-[8pt]"],
+.cv-size-xs [class*="text-[8.5pt]"] {
+  font-size: 7.2pt !important;
+}
+
+/* Small (SM - ~92% scale) */
+.cv-size-sm .a4-paper-container {
+  font-size: 9.2pt !important;
+  line-height: 1.42;
+}
+.cv-size-sm h1 {
+  font-size: 20pt !important;
+}
+.cv-size-sm h2,
+.cv-size-sm .section-heading h2,
+.cv-size-sm .geo-heading h2,
+.cv-size-sm .sec-banner {
+  font-size: 10.5pt !important;
+}
+.cv-size-sm h3 {
+  font-size: 10pt !important;
+}
+.cv-size-sm p,
+.cv-size-sm td,
+.cv-size-sm th,
+.cv-size-sm li,
+.cv-size-sm .summary-text,
+.cv-size-sm .geo-summary-text,
+.cv-size-sm .info-tbl td,
+.cv-size-sm .grid-tbl td,
+.cv-size-sm .company-name,
+.cv-size-sm .job-role {
+  font-size: 9pt !important;
+}
+.cv-size-sm .job-date,
+.cv-size-sm .lbl,
+.cv-size-sm table td.lbl,
+.cv-size-sm .contact-icon,
+.cv-size-sm [class*="text-[8pt]"],
+.cv-size-sm [class*="text-[8.5pt]"] {
+  font-size: 8pt !important;
+}
+
+/* Base (Normal 100% scale) */
+.cv-size-base .a4-paper-container {
+  font-size: 10pt;
+}
+
+/* Large (LG - ~110% scale) */
+.cv-size-lg .a4-paper-container {
+  font-size: 11pt !important;
+  line-height: 1.55;
+}
+.cv-size-lg h1 {
+  font-size: 25pt !important;
+}
+.cv-size-lg h2,
+.cv-size-lg .section-heading h2,
+.cv-size-lg .geo-heading h2,
+.cv-size-lg .sec-banner {
+  font-size: 12.5pt !important;
+}
+.cv-size-lg h3 {
+  font-size: 11.5pt !important;
+}
+.cv-size-lg p,
+.cv-size-lg td,
+.cv-size-lg th,
+.cv-size-lg li,
+.cv-size-lg .summary-text,
+.cv-size-lg .geo-summary-text,
+.cv-size-lg .info-tbl td,
+.cv-size-lg .grid-tbl td,
+.cv-size-lg .company-name,
+.cv-size-lg .job-role {
+  font-size: 10.8pt !important;
+}
+.cv-size-lg .job-date,
+.cv-size-lg .lbl,
+.cv-size-lg table td.lbl,
+.cv-size-lg .contact-icon,
+.cv-size-lg [class*="text-[8pt]"],
+.cv-size-lg [class*="text-[8.5pt]"] {
+  font-size: 9.5pt !important;
+}
+
+/* Extra Large (XL - ~120% scale) */
+.cv-size-xl .a4-paper-container {
+  font-size: 12pt !important;
+  line-height: 1.62;
+}
+.cv-size-xl h1 {
+  font-size: 28pt !important;
+}
+.cv-size-xl h2,
+.cv-size-xl .section-heading h2,
+.cv-size-xl .geo-heading h2,
+.cv-size-xl .sec-banner {
+  font-size: 14pt !important;
+}
+.cv-size-xl h3 {
+  font-size: 12.8pt !important;
+}
+.cv-size-xl p,
+.cv-size-xl td,
+.cv-size-xl th,
+.cv-size-xl li,
+.cv-size-xl .summary-text,
+.cv-size-xl .geo-summary-text,
+.cv-size-xl .info-tbl td,
+.cv-size-xl .grid-tbl td,
+.cv-size-xl .company-name,
+.cv-size-xl .job-role {
+  font-size: 11.8pt !important;
+}
+.cv-size-xl .job-date,
+.cv-size-xl .lbl,
+.cv-size-xl table td.lbl,
+.cv-size-xl .contact-icon,
+.cv-size-xl [class*="text-[8pt]"],
+.cv-size-xl [class*="text-[8.5pt]"] {
+  font-size: 10.5pt !important;
+}
+
+/* Custom Numeric Font Size (8pt - 72pt Dynamic Scaling) */
+.cv-size-custom .a4-paper-container {
+  font-size: var(--cv-base-font-size, 10pt) !important;
+}
+.cv-size-custom h1 {
+  font-size: calc(var(--cv-base-font-size, 10pt) * 1.8) !important;
+}
+.cv-size-custom h2,
+.cv-size-custom .section-heading h2,
+.cv-size-custom .geo-heading h2,
+.cv-size-custom .sec-banner {
+  font-size: calc(var(--cv-base-font-size, 10pt) * 1.25) !important;
+}
+.cv-size-custom h3 {
+  font-size: calc(var(--cv-base-font-size, 10pt) * 1.12) !important;
+}
+.cv-size-custom p,
+.cv-size-custom td,
+.cv-size-custom th,
+.cv-size-custom li,
+.cv-size-custom .summary-text,
+.cv-size-custom .geo-summary-text,
+.cv-size-custom .info-tbl td,
+.cv-size-custom .grid-tbl td,
+.cv-size-custom .company-name,
+.cv-size-custom .job-role,
+.cv-size-custom .page-text,
+.cv-size-custom .page-bullets li {
+  font-size: var(--cv-base-font-size, 10pt) !important;
+}
+.cv-size-custom .job-date,
+.cv-size-custom .lbl,
+.cv-size-custom table td.lbl,
+.cv-size-custom .contact-icon,
+.cv-size-custom [class*="text-[8pt]"],
+.cv-size-custom [class*="text-[8.5pt]"],
+.cv-size-custom [class*="text-[9pt]"] {
+  font-size: calc(var(--cv-base-font-size, 10pt) * 0.88) !important;
+}
+
+/* =========================================================
+   PAPER SIZES (A4, Letter, Legal)
+   A4 Standard: 8.2 x 11.7 in; 210 x 297 mm (8.27" x 11.69")
+   ========================================================= */
+.cv-paper-a4 .a4-paper-container {
+  width: 210mm !important;
+  min-height: 297mm !important;
+  max-width: 210mm !important;
+}
+
+.cv-paper-letter .a4-paper-container {
+  width: 215.9mm !important;
+  min-height: 279.4mm !important;
+  max-width: 215.9mm !important;
+}
+
+.cv-paper-legal .a4-paper-container {
+  width: 215.9mm !important;
+  min-height: 355.6mm !important;
+  max-width: 215.9mm !important;
+}
+
+/* =========================================================
+   SECTION & OPTIONS GAP (সেকশন ও অপশনগুলোর মধ্যবর্তী গ্যাপ তৈরি)
+   ========================================================= */
+
+.cv-gap-compact .section-heading,
+.cv-gap-compact .geo-heading,
+.cv-gap-compact .sec-banner {
+  margin-top: 6px !important;
+  margin-bottom: 4px !important;
+}
+.cv-gap-compact .experience-item,
+.cv-gap-compact .geo-experience-item {
+  margin-bottom: 8px !important;
+}
+.cv-gap-compact .summary-box,
+.cv-gap-compact .geo-summary-box {
+  margin-bottom: 10px !important;
+  padding: 8px 12px !important;
+}
+.cv-gap-compact section {
+  margin-bottom: 8px !important;
+}
+.cv-gap-compact table.info-tbl,
+.cv-gap-compact table.grid-tbl {
+  margin-bottom: 6px !important;
+}
+
+.cv-gap-normal .section-heading,
+.cv-gap-normal .geo-heading,
+.cv-gap-normal .sec-banner {
+  margin-top: 13px !important;
+  margin-bottom: 9px !important;
+}
+.cv-gap-normal .experience-item,
+.cv-gap-normal .geo-experience-item {
+  margin-bottom: 15px !important;
+}
+.cv-gap-normal .summary-box,
+.cv-gap-normal .geo-summary-box {
+  margin-bottom: 15px !important;
+  padding: 12px 16px !important;
+}
+.cv-gap-normal section {
+  margin-bottom: 13px !important;
+}
+.cv-gap-normal table.info-tbl,
+.cv-gap-normal table.grid-tbl {
+  margin-bottom: 10px !important;
+}
+
+.cv-gap-relaxed .section-heading,
+.cv-gap-relaxed .geo-heading,
+.cv-gap-relaxed .sec-banner {
+  margin-top: 20px !important;
+  margin-bottom: 14px !important;
+}
+.cv-gap-relaxed .experience-item,
+.cv-gap-relaxed .geo-experience-item {
+  margin-bottom: 22px !important;
+}
+.cv-gap-relaxed .summary-box,
+.cv-gap-relaxed .geo-summary-box {
+  margin-bottom: 22px !important;
+  padding: 16px 20px !important;
+}
+.cv-gap-relaxed section {
   margin-bottom: 20px !important;
+}
+.cv-gap-relaxed table.info-tbl,
+.cv-gap-relaxed table.grid-tbl {
+  margin-bottom: 16px !important;
+}
+
+.cv-gap-spacious .section-heading,
+.cv-gap-spacious .geo-heading,
+.cv-gap-spacious .sec-banner {
+  margin-top: 28px !important;
+  margin-bottom: 18px !important;
+}
+.cv-gap-spacious .experience-item,
+.cv-gap-spacious .geo-experience-item {
+  margin-bottom: 28px !important;
+}
+.cv-gap-spacious .summary-box,
+.cv-gap-spacious .geo-summary-box {
+  margin-bottom: 28px !important;
+  padding: 20px 24px !important;
+}
+.cv-gap-spacious section {
+  margin-bottom: 28px !important;
+}
+.cv-gap-spacious table.info-tbl,
+.cv-gap-spacious table.grid-tbl {
+  margin-bottom: 22px !important;
 }
 
 /* =========================================================
@@ -843,5 +1480,289 @@
 .preview-panel::-webkit-scrollbar-thumb:hover {
   background: #38bdf8;
 }
+
+/* =========================================================
+   TOP HEADER ALIGNMENT (CURRICULUM VITAE, NAME, POSITION, CONTACT)
+   ========================================================= */
+
+.cv-header-align-left .cv-title-head,
+.cv-header-align-left .profile-header,
+.cv-header-align-left .top-bar-content {
+  text-align: left !important;
+}
+.cv-header-align-left .cv-title-head h1,
+.cv-header-align-left .cv-title-head h2,
+.cv-header-align-left .cv-title-head p,
+.cv-header-align-left .cv-title-head div {
+  text-align: left !important;
+}
+
+.cv-header-align-center .cv-title-head,
+.cv-header-align-center .profile-header,
+.cv-header-align-center .top-bar-content {
+  text-align: center !important;
+}
+.cv-header-align-center .cv-title-head h1,
+.cv-header-align-center .cv-title-head h2,
+.cv-header-align-center .cv-title-head p,
+.cv-header-align-center .cv-title-head div {
+  text-align: center !important;
+}
+
+.cv-header-align-right .cv-title-head,
+.cv-header-align-right .profile-header,
+.cv-header-align-right .top-bar-content {
+  text-align: right !important;
+}
+.cv-header-align-right .cv-title-head h1,
+.cv-header-align-right .cv-title-head h2,
+.cv-header-align-right .cv-title-head p,
+.cv-header-align-right .cv-title-head div {
+  text-align: right !important;
+}
+
+/* =========================================================
+   MICROSOFT WORD RIBBON (HOME & PAGE LAYOUT) STYLES
+   ========================================================= */
+
+/* Font Family: Nirmala UI & Others */
+.cv-font-nirmala,
+.cv-font-nirmala * {
+  font-family: 'Nirmala UI', 'Segoe UI', Arial, sans-serif !important;
+}
+
+/* Page Layout: Margins (Normal 1", Narrow 0.5", Moderate 0.75", Wide 2") */
+.cv-margins-normal .a4-paper-container {
+  --cv-margin-top: 25.4mm;
+  --cv-margin-bottom: 25.4mm;
+  --cv-margin-left: 25.4mm;
+  --cv-margin-right: 25.4mm;
+}
+.cv-margins-narrow .a4-paper-container {
+  --cv-margin-top: 12.7mm;
+  --cv-margin-bottom: 12.7mm;
+  --cv-margin-left: 12.7mm;
+  --cv-margin-right: 12.7mm;
+}
+.cv-margins-moderate .a4-paper-container {
+  --cv-margin-top: 25.4mm;
+  --cv-margin-bottom: 25.4mm;
+  --cv-margin-left: 19.05mm;
+  --cv-margin-right: 19.05mm;
+}
+.cv-margins-wide .a4-paper-container {
+  --cv-margin-top: 25.4mm;
+  --cv-margin-bottom: 25.4mm;
+  --cv-margin-left: 50.8mm;
+  --cv-margin-right: 50.8mm;
+}
+
+/* Master container padding calculation honoring margins + indent */
+.a4-paper-container:not(.has-custom-pad):not(.fmt-tech-1):not(.fmt-corp-1):not(.fmt-corp-5) {
+  padding-top: var(--cv-margin-top, 14mm);
+  padding-bottom: var(--cv-margin-bottom, 14mm);
+  padding-left: calc(var(--cv-margin-left, 16mm) + var(--cv-indent-left, 0in));
+  padding-right: calc(var(--cv-margin-right, 16mm) + var(--cv-indent-right, 0in));
+  box-sizing: border-box;
+}
+
+.a4-paper-container.has-custom-pad {
+  box-sizing: border-box;
+}
+
+/* Page Layout: Orientation (Portrait / Landscape) */
+.cv-orientation-landscape .a4-paper-container {
+  width: 297mm !important;
+  min-height: 210mm !important;
+  max-width: 297mm !important;
+}
+.cv-orientation-portrait .a4-paper-container {
+  width: 210mm !important;
+  min-height: 297mm !important;
+  max-width: 210mm !important;
+}
+
+/* Paper Size with Orientation Support */
+.cv-paper-letter.cv-orientation-portrait .a4-paper-container {
+  width: 215.9mm !important;
+  min-height: 279.4mm !important;
+  max-width: 215.9mm !important;
+}
+.cv-paper-legal.cv-orientation-portrait .a4-paper-container {
+  width: 215.9mm !important;
+  min-height: 355.6mm !important;
+  max-width: 215.9mm !important;
+}
+.cv-paper-letter.cv-orientation-landscape .a4-paper-container {
+  width: 279.4mm !important;
+  min-height: 215.9mm !important;
+  max-width: 279.4mm !important;
+}
+.cv-paper-legal.cv-orientation-landscape .a4-paper-container {
+  width: 355.6mm !important;
+  min-height: 215.9mm !important;
+  max-width: 355.6mm !important;
+}
+
+/* Page Layout: Columns (One Column vs Two Columns) */
+.cv-columns-two .cv-content-flow {
+  column-count: 2 !important;
+  column-gap: 8mm !important;
+  column-rule: 1px dashed #cbd5e1 !important;
+}
+.cv-columns-two .cv-flow-section,
+.cv-columns-two .cv-content-flow > * {
+  break-inside: avoid-column !important;
+  page-break-inside: avoid !important;
+  margin-bottom: 8px !important;
+}
+
+/* Text Alignment: Left, Center, Right, Justify */
+.cv-text-left .a4-paper-container,
+.cv-text-left .a4-paper-container p,
+.cv-text-left .a4-paper-container td,
+.cv-text-left .a4-paper-container th,
+.cv-text-left .a4-paper-container li,
+.cv-text-left .a4-paper-container .summary-text,
+.cv-text-left .a4-paper-container .page-text {
+  text-align: left !important;
+}
+.cv-text-center .a4-paper-container,
+.cv-text-center .a4-paper-container p,
+.cv-text-center .a4-paper-container td,
+.cv-text-center .a4-paper-container th,
+.cv-text-center .a4-paper-container li,
+.cv-text-center .a4-paper-container .summary-text,
+.cv-text-center .a4-paper-container .page-text {
+  text-align: center !important;
+}
+.cv-text-right .a4-paper-container,
+.cv-text-right .a4-paper-container p,
+.cv-text-right .a4-paper-container td,
+.cv-text-right .a4-paper-container th,
+.cv-text-right .a4-paper-container li,
+.cv-text-right .a4-paper-container .summary-text,
+.cv-text-right .a4-paper-container .page-text {
+  text-align: right !important;
+}
+.cv-text-justify .a4-paper-container,
+.cv-text-justify .a4-paper-container p,
+.cv-text-justify .a4-paper-container td,
+.cv-text-justify .a4-paper-container th,
+.cv-text-justify .a4-paper-container li,
+.cv-text-justify .a4-paper-container .summary-text,
+.cv-text-justify .a4-paper-container .page-text {
+  text-align: justify !important;
+}
+
+/* Home: Bold, Italic, Underline, Strikethrough */
+.cv-fmt-bold .a4-paper-container,
+.cv-fmt-bold .a4-paper-container p,
+.cv-fmt-bold .a4-paper-container td,
+.cv-fmt-bold .a4-paper-container th,
+.cv-fmt-bold .a4-paper-container li,
+.cv-fmt-bold .a4-paper-container span,
+.cv-fmt-bold .a4-paper-container div {
+  font-weight: 700 !important;
+}
+
+.cv-fmt-italic .a4-paper-container,
+.cv-fmt-italic .a4-paper-container p,
+.cv-fmt-italic .a4-paper-container td,
+.cv-fmt-italic .a4-paper-container th,
+.cv-fmt-italic .a4-paper-container li,
+.cv-fmt-italic .a4-paper-container span,
+.cv-fmt-italic .a4-paper-container div {
+  font-style: italic !important;
+}
+
+.cv-fmt-underline .cv-title-head h1,
+.cv-fmt-underline .cv-title-head h2,
+.cv-fmt-underline .sec-banner,
+.cv-fmt-underline .section-heading h2,
+.cv-fmt-underline .geo-heading h2,
+.cv-fmt-underline table.info-tbl td.lbl,
+.cv-fmt-underline table.grid-tbl th,
+.cv-fmt-underline .page-title-banner {
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+
+.cv-fmt-strike .a4-paper-container,
+.cv-fmt-strike .a4-paper-container p,
+.cv-fmt-strike .a4-paper-container td,
+.cv-fmt-strike .a4-paper-container th,
+.cv-fmt-strike .a4-paper-container li,
+.cv-fmt-strike .a4-paper-container span {
+  text-decoration: line-through !important;
+}
+
+/* Word Case transformations */
+.cv-case-uppercase .a4-paper-container,
+.cv-case-uppercase .a4-paper-container * {
+  text-transform: uppercase !important;
+}
+.cv-case-lowercase .a4-paper-container,
+.cv-case-lowercase .a4-paper-container * {
+  text-transform: lowercase !important;
+}
+.cv-case-capitalize .a4-paper-container,
+.cv-case-capitalize .a4-paper-container * {
+  text-transform: capitalize !important;
+}
+
+/* Home: Line Spacing & Table Row Padding */
+.a4-paper-container,
+.a4-paper-container * {
+  line-height: var(--cv-line-height, 1.4) !important;
+}
+.a4-paper-container table.info-tbl td {
+  padding-top: calc(var(--cv-line-height, 1.15) * 2px) !important;
+  padding-bottom: calc(var(--cv-line-height, 1.15) * 2px) !important;
+}
+.a4-paper-container table.grid-tbl th,
+.a4-paper-container table.grid-tbl td {
+  padding-top: calc(var(--cv-line-height, 1.15) * 3px) !important;
+  padding-bottom: calc(var(--cv-line-height, 1.15) * 3px) !important;
+}
+
+/* Dynamic paragraph before/after spacing */
+.a4-paper-container p,
+.a4-paper-container .sec-banner,
+.a4-paper-container .section-heading,
+.a4-paper-container .geo-heading,
+.a4-paper-container table,
+.a4-paper-container .summary-box,
+.a4-paper-container .experience-item,
+.a4-paper-container .page-title-banner,
+.a4-paper-container .cv-flow-section {
+  margin-top: var(--cv-spacing-before, 0pt) !important;
+  margin-bottom: var(--cv-spacing-after, 8pt) !important;
+}
+
+/* Home: Font Color & Highlight Color */
+.cv-has-font-color .a4-paper-container,
+.cv-has-font-color .a4-paper-container p,
+.cv-has-font-color .a4-paper-container td,
+.cv-has-font-color .a4-paper-container th,
+.cv-has-font-color .a4-paper-container li,
+.cv-has-font-color .a4-paper-container span:not(.page-badge):not(.page-candidate-name) {
+  color: var(--cv-font-color) !important;
+}
+
+.cv-has-highlight .a4-paper-container p,
+.cv-has-highlight .a4-paper-container td,
+.cv-has-highlight .a4-paper-container li,
+.cv-has-highlight .a4-paper-container .page-text {
+  background-color: var(--cv-highlight-color) !important;
+}
+
+/* Bullets hide toggle */
+.cv-hide-bullets ul.page-bullets,
+.cv-hide-bullets .page-bullets {
+  list-style: none !important;
+  padding-left: 0 !important;
+}
+
 
 

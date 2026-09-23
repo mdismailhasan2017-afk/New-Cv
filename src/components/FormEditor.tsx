@@ -27,6 +27,7 @@ import { COMMON_SKILL_SUGGESTIONS } from '../data/samplePresets';
 import { InlinePassportScanner } from './InlinePassportScanner';
 import { transformCase, TextCaseMode } from '../utils/textTransform';
 import { formatBangladeshiAddress } from '../utils/passportScanner';
+import { compressImageForCVPhoto } from '../utils/imageCompressor';
 
 interface FormEditorProps {
   data: CVData;
@@ -78,10 +79,19 @@ export const FormEditor: React.FC<FormEditorProps> = ({ data, onChange, onOpenHi
     });
   };
 
-  // Photo handler
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Photo handler with automatic compression
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      try {
+        const compressed = await compressImageForCVPhoto(file);
+        if (compressed) {
+          updateField('photoUrl', compressed);
+          return;
+        }
+      } catch {
+        // fallback
+      }
       const reader = new FileReader();
       reader.onload = (uploadEvent) => {
         updateField('photoUrl', uploadEvent.target?.result as string);
@@ -376,7 +386,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({ data, onChange, onOpenHi
               <h3 className="text-xs sm:text-sm font-bold text-slate-100 uppercase tracking-wide">
                 ১. যোগাযোগ ও সাধারণ তথ্য
               </h3>
-              <p className="text-[11px] text-slate-400">নাম, পদবী, মোবাইল, ইমেইল ও ছবি</p>
+              <p className="text-[11px] text-slate-400">নাম, পদবী, টেলিফোন, ইমেইল ও ছবি</p>
             </div>
           </div>
           {activeSection === 'contact' ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -479,7 +489,7 @@ export const FormEditor: React.FC<FormEditorProps> = ({ data, onChange, onOpenHi
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">মোবাইল নম্বর (Mobile)</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">টেলিফোন নম্বর (Telephone No)</label>
                 <input
                   id="in_mobile"
                   type="text"
@@ -651,31 +661,16 @@ export const FormEditor: React.FC<FormEditorProps> = ({ data, onChange, onOpenHi
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">ইস্যুর তারিখ (Issue Date)</label>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Place of Issue (প্রদানের স্থান)</label>
                   <input
-                    id="in_issue"
+                    id="in_place_of_issue"
                     type="text"
-                    value={data.dateOfIssue}
-                    onChange={(e) => updateField('dateOfIssue', e.target.value)}
-                    placeholder="e.g. 13 JUN 2022"
+                    value={data.placeOfIssue || ''}
+                    onChange={(e) => updateField('placeOfIssue', e.target.value)}
+                    placeholder="e.g. DIP/DHAKA"
                     className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs text-slate-100"
                   />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">মেয়াদোত্তীর্ণের তারিখ (Expiry Date)</label>
-                  <input
-                    id="in_expiry"
-                    type="text"
-                    value={data.dateOfExpiry}
-                    onChange={(e) => updateField('dateOfExpiry', e.target.value)}
-                    placeholder="e.g. 15 Feb 2036"
-                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs text-slate-100"
-                  />
-                </div>
-              </div>
-
-              {/* Additional Passport Fields: Personal No, Prev Passport, Place of Issue */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5 pt-2.5 border-t border-slate-800">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-300 mb-1">Personal No (NID)</label>
                   <input
@@ -687,27 +682,112 @@ export const FormEditor: React.FC<FormEditorProps> = ({ data, onChange, onOpenHi
                     className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs text-slate-100 font-mono"
                   />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Previous Passport No</label>
-                  <input
-                    id="in_prev_passport"
-                    type="text"
-                    value={data.previousPassportNumber || ''}
-                    onChange={(e) => updateField('previousPassportNumber', e.target.value)}
-                    placeholder="e.g. AA2328199"
-                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs text-slate-100 font-mono"
-                  />
+              </div>
+
+              {/* Date of Issue and Date of Expiry Options (Date of Expiry directly below Date of Issue) */}
+              <div className="mt-3 p-3 bg-slate-950/80 border border-slate-800 rounded-lg space-y-2.5">
+                <div className="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>📅 পাসপোর্টের মেয়াদকাল অপশন</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Date Of Issue এর নিচে Date Of Expiry</span>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Place of Issue</label>
-                  <input
-                    id="in_place_of_issue"
-                    type="text"
-                    value={data.placeOfIssue || ''}
-                    onChange={(e) => updateField('placeOfIssue', e.target.value)}
-                    placeholder="e.g. DIP/DHAKA"
-                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs text-slate-100"
-                  />
+
+                <div className="space-y-2">
+                  {/* অপশন ১: ইস্যুর তারিখ (Date of Issue) */}
+                  <div className="p-2 bg-slate-900/90 border border-slate-800 rounded-md">
+                    <label className="block text-[11px] font-semibold text-sky-300 mb-1 flex items-center justify-between">
+                      <span>ইস্যুর তারিখ (Date Of Issue)</span>
+                      <span className="text-[10px] text-slate-500">অপশন ১</span>
+                    </label>
+                    <input
+                      id="in_issue"
+                      type="text"
+                      value={data.dateOfIssue}
+                      onChange={(e) => updateField('dateOfIssue', e.target.value)}
+                      placeholder="e.g. 13 JUN 2022"
+                      className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 focus:border-sky-500 rounded text-xs text-slate-100"
+                    />
+                  </div>
+
+                  {/* অপশন ২: মেয়াদোত্তীর্ণের তারিখ (Date Of Expiry) - Date of Issue এর নিচে আলাদা অপশন */}
+                  <div className="p-2 bg-slate-900/90 border border-slate-800 rounded-md">
+                    <label className="block text-[11px] font-semibold text-amber-300 mb-1 flex items-center justify-between">
+                      <span>মেয়াদোত্তীর্ণের তারিখ (Date Of Expiry)</span>
+                      <span className="text-[10px] text-slate-500">Date Of Issue নিচে অপশন ২</span>
+                    </label>
+                    <input
+                      id="in_expiry"
+                      type="text"
+                      value={data.dateOfExpiry}
+                      onChange={(e) => updateField('dateOfExpiry', e.target.value)}
+                      placeholder="e.g. 15 Feb 2036"
+                      className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 focus:border-amber-500 rounded text-xs text-slate-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Previous Passport Number */}
+              <div className="mt-2.5 pt-2.5 border-t border-slate-800">
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Previous Passport No (পূর্বের পাসপোর্ট নম্বর)</label>
+                <input
+                  id="in_prev_passport"
+                  type="text"
+                  value={data.previousPassportNumber || ''}
+                  onChange={(e) => updateField('previousPassportNumber', e.target.value)}
+                  placeholder="e.g. AA2328199"
+                  className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs text-slate-100 font-mono"
+                />
+              </div>
+
+              {/* Optional Emergency Contact / Telephone Section */}
+              <div className="mt-2.5 pt-2.5 border-t border-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-slate-300">
+                    জরুরী যোগাযোগ ও টেলিফোন নম্বর (Emergency Contact & Telephone No - ঐচ্ছিক)
+                  </span>
+                  {(data.emergencyContactPhone || data.emergencyContactName) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateField('emergencyContactName', '');
+                        updateField('emergencyContactRelation', '');
+                        updateField('emergencyContactPhone', '');
+                      }}
+                      className="text-[10px] text-rose-400 hover:text-rose-300 underline cursor-pointer"
+                      title="জরুরী যোগাযোগ মুছে ফেলুন"
+                    >
+                      মুছে ফেলুন (Clear)
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <input
+                      type="text"
+                      value={data.emergencyContactName || ''}
+                      onChange={(e) => updateField('emergencyContactName', e.target.value)}
+                      placeholder="জরুরী ব্যক্তির নাম"
+                      className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      value={data.emergencyContactRelation || ''}
+                      onChange={(e) => updateField('emergencyContactRelation', e.target.value)}
+                      placeholder="সম্পর্ক (e.g. FATHER)"
+                      className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      value={data.emergencyContactPhone || ''}
+                      onChange={(e) => updateField('emergencyContactPhone', e.target.value)}
+                      placeholder="Telephone No"
+                      className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-slate-200 font-mono"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

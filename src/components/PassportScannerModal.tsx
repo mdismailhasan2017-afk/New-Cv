@@ -31,6 +31,7 @@ import {
   formatPassportDetailsText,
   PassportHistoryItem,
 } from '../utils/passportHistory';
+import { createMicroThumbnail } from '../utils/imageCompressor';
 
 interface PassportScannerModalProps {
   isOpen: boolean;
@@ -68,6 +69,7 @@ export const PassportScannerModal: React.FC<PassportScannerModalProps> = ({
 
   // Field selection checkboxes
   const [applyPassportNo, setApplyPassportNo] = useState(true);
+  const [applyTelephoneNo, setApplyTelephoneNo] = useState(true);
   const [applyIssueDate, setApplyIssueDate] = useState(true);
   const [applyExpiryDate, setApplyExpiryDate] = useState(true);
   const [applyName, setApplyName] = useState(true);
@@ -75,10 +77,6 @@ export const PassportScannerModal: React.FC<PassportScannerModalProps> = ({
   const [applyMotherName, setApplyMotherName] = useState(true);
   const [applyDOB, setApplyDOB] = useState(true);
   const [applyAddress, setApplyAddress] = useState(true);
-  const [applyPresentAddress, setApplyPresentAddress] = useState(true);
-  const [applyPersonalNo, setApplyPersonalNo] = useState(true);
-  const [applyPrevPassportNo, setApplyPrevPassportNo] = useState(true);
-  const [applyPlaceOfIssue, setApplyPlaceOfIssue] = useState(true);
   const [applyGender, setApplyGender] = useState(true);
   const [applyNationality, setApplyNationality] = useState(true);
   const [applyReligion, setApplyReligion] = useState(true);
@@ -88,6 +86,7 @@ export const PassportScannerModal: React.FC<PassportScannerModalProps> = ({
 
   // Editable fields in modal
   const [editablePassportNo, setEditablePassportNo] = useState('');
+  const [editableTelephoneNo, setEditableTelephoneNo] = useState('');
   const [editableIssueDate, setEditableIssueDate] = useState('');
   const [editableExpiryDate, setEditableExpiryDate] = useState('');
   const [editableName, setEditableName] = useState('');
@@ -95,10 +94,6 @@ export const PassportScannerModal: React.FC<PassportScannerModalProps> = ({
   const [editableMotherName, setEditableMotherName] = useState('');
   const [editableDOB, setEditableDOB] = useState('');
   const [editableAddress, setEditableAddress] = useState('');
-  const [editablePresentAddress, setEditablePresentAddress] = useState('');
-  const [editablePersonalNo, setEditablePersonalNo] = useState('');
-  const [editablePrevPassportNo, setEditablePrevPassportNo] = useState('');
-  const [editablePlaceOfIssue, setEditablePlaceOfIssue] = useState('');
   const [editableNationality, setEditableNationality] = useState('');
   const [editableGender, setEditableGender] = useState('');
   const [editableReligion, setEditableReligion] = useState('');
@@ -192,16 +187,24 @@ export const PassportScannerModal: React.FC<PassportScannerModalProps> = ({
     }
   };
 
-  const populateFieldsFromResult = (result: PassportScanResult, skipSaveHistory = false) => {
+  const populateFieldsFromResult = async (result: PassportScanResult, skipSaveHistory = false) => {
     setScanResult(result);
 
-    // Save scan to history
+    // Save scan to history safely
     if (!skipSaveHistory) {
       try {
-        const updated = savePassportScanToHistory(result, imagePreview);
+        let microThumb: string | undefined = undefined;
+        if (imagePreview) {
+          try {
+            microThumb = await createMicroThumbnail(imagePreview);
+          } catch {
+            // ignore
+          }
+        }
+        const updated = savePassportScanToHistory(result, microThumb);
         setHistory(updated);
       } catch (err) {
-        console.error('History save error:', err);
+        console.warn('History save notification:', err);
       }
     }
 
@@ -215,16 +218,11 @@ export const PassportScannerModal: React.FC<PassportScannerModalProps> = ({
     setEditableDOB(result.dob || '');
     setEditableNationality(toCapitalCase(result.nationality || 'Bangladeshi by Birth'));
     setEditableGender(result.gender || 'Male');
-    setEditablePersonalNo(result.personalNo || '');
-    setEditablePrevPassportNo(result.previousPassportNumber || '');
-    setEditablePlaceOfIssue(result.placeOfIssue || (result.placeOfBirth ? `DIP/${result.placeOfBirth.toUpperCase()}` : 'DIP/DHAKA'));
+    setEditableTelephoneNo(result.telephoneNo || result.emergencyContactPhone || '');
     const rawPermanent = result.permanentAddress || (result.placeOfBirth ? `${result.placeOfBirth.toUpperCase()}, BANGLADESH` : '');
     const formattedPermanent = formatBangladeshiAddress(rawPermanent);
-    const rawPresent = result.presentAddress || result.permanentAddress || '';
-    const formattedPresent = formatBangladeshiAddress(rawPresent || rawPermanent);
 
     setEditableAddress(formattedPermanent);
-    setEditablePresentAddress(formattedPresent);
     setEditableReligion(result.religion || 'Islam');
     setEditableMaritalStatus(result.maritalStatus || 'Married');
     setEditableHeight(result.height || `5' 6"`);
@@ -240,9 +238,7 @@ export const PassportScannerModal: React.FC<PassportScannerModalProps> = ({
     setEditableFatherName((prev) => transformCase(prev, mode));
     setEditableMotherName((prev) => transformCase(prev, mode));
     setEditableAddress((prev) => transformCase(prev, mode));
-    setEditablePresentAddress((prev) => transformCase(prev, mode));
     setEditableNationality((prev) => transformCase(prev, mode));
-    setEditablePlaceOfIssue((prev) => transformCase(prev, mode));
     setEditableReligion((prev) => transformCase(prev, mode));
     setEditableMaritalStatus((prev) => transformCase(prev, mode));
   };
@@ -330,10 +326,13 @@ Date of Issue / Expiry\t: 13 JUN 2022 / 15 Feb 2036 (DIP/DHAKA)`;
     if (d.gender) updates.gender = d.gender;
     if (d.nationality) updates.nationality = toCapitalCase(d.nationality);
     if (d.permanentAddress) updates.permanentAddress = formatBangladeshiAddress(d.permanentAddress);
-    if (d.presentAddress) updates.presentAddress = formatBangladeshiAddress(d.presentAddress || d.permanentAddress);
-    if (d.personalNo) updates.personalNo = d.personalNo;
-    if (d.previousPassportNumber) updates.previousPassportNumber = d.previousPassportNumber;
-    if (d.placeOfIssue) updates.placeOfIssue = d.placeOfIssue;
+    if (d.telephoneNo || d.emergencyContactPhone) {
+      updates.mobile = (d.telephoneNo || d.emergencyContactPhone || '').trim();
+    }
+    updates.placeOfIssue = '';
+    updates.personalNo = '';
+    updates.previousPassportNumber = '';
+    updates.presentAddress = '';
     if (d.religion) updates.religion = d.religion;
     if (d.maritalStatus) updates.maritalStatus = d.maritalStatus;
     if (d.height) updates.height = d.height;
@@ -380,6 +379,9 @@ Date of Issue / Expiry\t: 13 JUN 2022 / 15 Feb 2036 (DIP/DHAKA)`;
     if (applyPassportNo && editablePassportNo) {
       updates.passportNumber = editablePassportNo;
     }
+    if (applyTelephoneNo && editableTelephoneNo) {
+      updates.mobile = editableTelephoneNo;
+    }
     if (applyIssueDate && editableIssueDate) {
       updates.dateOfIssue = editableIssueDate;
     }
@@ -407,20 +409,10 @@ Date of Issue / Expiry\t: 13 JUN 2022 / 15 Feb 2036 (DIP/DHAKA)`;
     if (applyAddress && editableAddress) {
       updates.permanentAddress = editableAddress;
     }
-    if (applyPresentAddress && editablePresentAddress) {
-      updates.presentAddress = editablePresentAddress;
-    } else if (applyAddress && editableAddress) {
-      updates.presentAddress = editableAddress;
-    }
-    if (applyPersonalNo && editablePersonalNo) {
-      updates.personalNo = editablePersonalNo;
-    }
-    if (applyPrevPassportNo && editablePrevPassportNo) {
-      updates.previousPassportNumber = editablePrevPassportNo;
-    }
-    if (applyPlaceOfIssue && editablePlaceOfIssue) {
-      updates.placeOfIssue = editablePlaceOfIssue;
-    }
+    updates.placeOfIssue = '';
+    updates.personalNo = '';
+    updates.previousPassportNumber = '';
+    updates.presentAddress = '';
     if (applyReligion && editableReligion) {
       updates.religion = editableReligion;
     }
@@ -800,7 +792,9 @@ Date of Issue / Expiry\t: 13 JUN 2022 / 15 Feb 2036 (DIP/DHAKA)`;
                         {/* Quick detail pills */}
                         <div className="text-[10px] text-slate-300 bg-slate-950/60 p-2 rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-1 font-sans">
                           {item.data.fatherName && <div>পিতা: <span className="text-slate-400">{item.data.fatherName}</span></div>}
-                          {item.data.personalNo && <div>NID/Personal: <span className="text-slate-400 font-mono">{item.data.personalNo}</span></div>}
+                          {(item.data.telephoneNo || item.data.emergencyContactPhone) && (
+                            <div>টেলিফোন: <span className="text-emerald-400 font-mono">{item.data.telephoneNo || item.data.emergencyContactPhone}</span></div>
+                          )}
                           {item.data.permanentAddress && (
                             <div className="sm:col-span-2 truncate">ঠিকানা: <span className="text-slate-400">{item.data.permanentAddress}</span></div>
                           )}
@@ -966,20 +960,20 @@ Date of Issue / Expiry\t: 13 JUN 2022 / 15 Feb 2036 (DIP/DHAKA)`;
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      id="chk_prev_pass"
-                      checked={applyPrevPassportNo}
-                      onChange={(e) => setApplyPrevPassportNo(e.target.checked)}
+                      id="chk_telephone"
+                      checked={applyTelephoneNo}
+                      onChange={(e) => setApplyTelephoneNo(e.target.checked)}
                       className="w-4 h-4 rounded text-sky-500 bg-slate-900 border-slate-700 cursor-pointer"
                     />
-                    <label htmlFor="chk_prev_pass" className="text-xs text-slate-300 w-24 shrink-0 cursor-pointer">
-                      পূর্ববর্তী পাসপোর্ট:
+                    <label htmlFor="chk_telephone" className="text-xs text-sky-300 w-24 shrink-0 font-medium cursor-pointer">
+                      টেলিফোন নম্বর:
                     </label>
                     <input
                       type="text"
-                      value={editablePrevPassportNo}
-                      onChange={(e) => setEditablePrevPassportNo(e.target.value)}
-                      placeholder="AA2328199"
-                      className="flex-1 px-2.5 py-1 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs font-mono text-slate-100 outline-none"
+                      value={editableTelephoneNo}
+                      onChange={(e) => setEditableTelephoneNo(e.target.value)}
+                      placeholder="+8801700000000"
+                      className="flex-1 px-2.5 py-1 bg-slate-900 border border-sky-600/60 focus:border-sky-400 rounded text-xs font-mono font-bold text-emerald-400 outline-none"
                     />
                   </div>
                 </div>
@@ -1204,89 +1198,7 @@ Date of Issue / Expiry\t: 13 JUN 2022 / 15 Feb 2036 (DIP/DHAKA)`;
                   </div>
                 </div>
 
-                {/* 7b. Present Address */}
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="chk_present_address"
-                    checked={applyPresentAddress}
-                    onChange={(e) => setApplyPresentAddress(e.target.checked)}
-                    className="w-4 h-4 rounded text-sky-500 bg-slate-900 border-slate-700 cursor-pointer"
-                  />
-                  <label htmlFor="chk_present_address" className="text-xs text-slate-300 w-24 shrink-0 font-medium cursor-pointer">
-                    বর্তমান ঠিকানা:
-                  </label>
-                  <div className="flex-1 flex items-center gap-1">
-                    <input
-                      type="text"
-                      value={editablePresentAddress}
-                      onChange={(e) => setEditablePresentAddress(e.target.value)}
-                      placeholder="Vill: Paiksha, P.O: Ghorashal, P.S: Palash, Dist: Narsingdi"
-                      className="flex-1 px-2.5 py-1 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs text-slate-100 outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setEditablePresentAddress(formatBangladeshiAddress(editablePresentAddress))}
-                      className="px-2 py-1 bg-sky-950/80 hover:bg-sky-900 text-[10px] font-medium text-sky-300 rounded border border-sky-700/60 cursor-pointer whitespace-nowrap"
-                      title="Vill: ..., P.O: ..., P.S: ..., Dist: ... ফরম্যাট করুন"
-                    >
-                      Vill/P.O
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleSingleFieldCase(editablePresentAddress, setEditablePresentAddress)}
-                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-sky-300 rounded border border-slate-700 cursor-pointer"
-                      title="ক্যাপিটাল / স্মল টগল করুন"
-                    >
-                      Aa
-                    </button>
-                  </div>
-                </div>
-
-                {/* 8. Personal No (NID) & Place of Issue */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="chk_nid"
-                      checked={applyPersonalNo}
-                      onChange={(e) => setApplyPersonalNo(e.target.checked)}
-                      className="w-4 h-4 rounded text-sky-500 bg-slate-900 border-slate-700 cursor-pointer"
-                    />
-                    <label htmlFor="chk_nid" className="text-xs text-slate-300 w-24 shrink-0 cursor-pointer">
-                      Personal (NID):
-                    </label>
-                    <input
-                      type="text"
-                      value={editablePersonalNo}
-                      onChange={(e) => setEditablePersonalNo(e.target.value)}
-                      placeholder="4164712004"
-                      className="flex-1 px-2.5 py-1 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs font-mono text-slate-100 outline-none"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="chk_issue_place"
-                      checked={applyPlaceOfIssue}
-                      onChange={(e) => setApplyPlaceOfIssue(e.target.checked)}
-                      className="w-4 h-4 rounded text-sky-500 bg-slate-900 border-slate-700 cursor-pointer"
-                    />
-                    <label htmlFor="chk_issue_place" className="text-xs text-slate-300 w-20 shrink-0 cursor-pointer">
-                      ইস্যুর স্থান:
-                    </label>
-                    <input
-                      type="text"
-                      value={editablePlaceOfIssue}
-                      onChange={(e) => setEditablePlaceOfIssue(e.target.value)}
-                      placeholder="DIP/DHAKA"
-                      className="flex-1 px-2.5 py-1 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded text-xs text-slate-100 outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* 9. Nationality, Religion, Marital Status */}
+                {/* 8. Nationality, Religion, Marital Status */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div className="flex items-center gap-2">
                     <input

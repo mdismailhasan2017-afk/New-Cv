@@ -1,5 +1,66 @@
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas-pro';
+import { CVPaperSize } from '../types';
+
+/**
+ * Detect current paper size from the DOM wrapper classes.
+ */
+export function detectCurrentPaperSize(): CVPaperSize {
+  if (typeof document === 'undefined') return 'a4';
+  const wrapper = document.querySelector('.cv-pages-wrapper');
+  if (wrapper?.classList.contains('cv-paper-letter')) return 'letter';
+  if (wrapper?.classList.contains('cv-paper-legal')) return 'legal';
+  return 'a4';
+}
+
+/**
+ * Sets 300 DPI resolution metadata into the JPEG binary header (JFIF APP0 segment).
+ * This guarantees that when the downloaded JPG is opened in Windows Photo Viewer,
+ * Microsoft Word, Photoshop, or commercial printers, it registers exactly 300 DPI
+ * and physical print dimensions of:
+ * - A4: 8.27" × 11.69" (210 × 297 mm)
+ */
+function setJpegDpi(uint8Array: Uint8Array, dpi: number = 300): Uint8Array {
+  // Check SOI marker (0xFF, 0xD8)
+  if (uint8Array[0] !== 0xFF || uint8Array[1] !== 0xD8) return uint8Array;
+
+  // Check if APP0 marker (0xFF, 0xE0) exists at offset 2
+  if (uint8Array[2] === 0xFF && uint8Array[3] === 0xE0) {
+    // Verify "JFIF\0" identifier (4A 46 49 46 00)
+    if (
+      uint8Array[6] === 0x4A &&
+      uint8Array[7] === 0x46 &&
+      uint8Array[8] === 0x49 &&
+      uint8Array[9] === 0x46 &&
+      uint8Array[10] === 0x00
+    ) {
+      uint8Array[13] = 1; // 1 = dots per inch (DPI)
+      uint8Array[14] = (dpi >> 8) & 0xFF; // Xdensity high byte
+      uint8Array[15] = dpi & 0xFF;        // Xdensity low byte
+      uint8Array[16] = (dpi >> 8) & 0xFF; // Ydensity high byte
+      uint8Array[17] = dpi & 0xFF;        // Ydensity low byte
+      return uint8Array;
+    }
+  }
+
+  // If no standard JFIF APP0 is present, inject an 18-byte JFIF header
+  const app0 = new Uint8Array([
+    0xFF, 0xE0, // APP0 marker
+    0x00, 0x10, // length = 16 bytes
+    0x4A, 0x46, 0x49, 0x46, 0x00, // "JFIF\0"
+    0x01, 0x02, // version 1.2
+    0x01,       // units: 1 = dots per inch (DPI)
+    (dpi >> 8) & 0xFF, dpi & 0xFF, // Xdensity
+    (dpi >> 8) & 0xFF, dpi & 0xFF, // Ydensity
+    0x00, 0x00  // no thumbnail
+  ]);
+
+  const result = new Uint8Array(uint8Array.length + app0.length);
+  result.set(uint8Array.subarray(0, 2), 0); // SOI (FF D8)
+  result.set(app0, 2);                      // Insert APP0
+  result.set(uint8Array.subarray(2), 2 + app0.length); // Remainder of JPEG
+  return result;
+}
 
 /**
  * Ensures all web fonts are fully loaded before capturing DOM.
@@ -50,11 +111,16 @@ function applyClonedDocFontFixes(clonedDoc: Document): void {
       padding: 0 !important;
       margin: 0 !important;
     }
+    .print-hide,
+    .no-print {
+      display: none !important;
+    }
     .a4-paper-container {
       transform: none !important;
       box-shadow: none !important;
       margin: 0 !important;
       border: none !important;
+      box-sizing: border-box !important;
     }
   `;
   clonedDoc.head.appendChild(styleTag);
@@ -85,7 +151,8 @@ function applyClonedDocFontFixes(clonedDoc: Document): void {
  */
 export async function exportCVToPDF(
   filename: string = 'CV_Resume.pdf',
-  onProgress?: (message: string) => void
+  onProgress?: (message: string) => void,
+  paperSize?: CVPaperSize
 ): Promise<void> {
   const pageElements = Array.from(document.querySelectorAll<HTMLElement>('.a4-paper-container'));
   
@@ -98,10 +165,25 @@ export async function exportCVToPDF(
 
   onProgress?.(`PDF প্রস্তুত করা হচ্ছে (মোট ${pageElements.length}টি পেজ)...`);
 
+  const paper = paperSize || detectCurrentPaperSize();
+  let format: string = 'a4';
+  let pageWidth = 210;
+  let pageHeight = 297;
+
+  if (paper === 'letter') {
+    format = 'letter';
+    pageWidth = 215.9;
+    pageHeight = 279.4;
+  } else if (paper === 'legal') {
+    format = 'legal';
+    pageWidth = 215.9;
+    pageHeight = 355.6;
+  }
+
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: 'a4',
+    format: format as any,
     compress: true,
   });
 
@@ -125,16 +207,14 @@ export async function exportCVToPDF(
     const imgData = canvas.toDataURL('image/png');
 
     if (i > 0) {
-      pdf.addPage('a4', 'portrait');
+      pdf.addPage(format as any, 'portrait');
     }
 
-    // A4 dimensions: 210mm x 297mm
-    const imgWidth = 210;
-    const pageHeight = 297;
+    const imgWidth = pageWidth;
     const canvasRatio = canvas.height / canvas.width;
     let imgHeight = imgWidth * canvasRatio;
 
-    // If within 6mm of standard A4, snap to 297mm to prevent any vertical stretch
+    // If within 6mm of standard page height, snap to pageHeight to prevent vertical stretch
     if (Math.abs(imgHeight - pageHeight) <= 6) {
       imgHeight = pageHeight;
     }
@@ -148,12 +228,14 @@ export async function exportCVToPDF(
 }
 
 /**
- * Export CV pages as High-Resolution JPG image files.
+ * Export CV pages as High-Resolution JPG image files in exact A4 (8.27" × 11.69" • 210 × 297 mm)
+ * dimensions (2480 × 3508 pixels at 300 DPI) with embedded JFIF 300 DPI headers.
  */
 export async function exportCVToJPG(
   candidateName: string = 'Candidate',
   pageIndex?: number,
-  onProgress?: (message: string) => void
+  onProgress?: (message: string) => void,
+  paperSize?: CVPaperSize
 ): Promise<void> {
   const pageElements = Array.from(document.querySelectorAll<HTMLElement>('.a4-paper-container'));
 
@@ -165,22 +247,30 @@ export async function exportCVToJPG(
   await ensureFontsLoaded();
 
   const cleanName = candidateName.trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '_') || 'Resume';
+  const paper = paperSize || detectCurrentPaperSize();
 
-  const downloadCanvasAsJPG = (canvas: HTMLCanvasElement, filename: string) => {
-    // 0.98 high-quality JPEG
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.98);
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // Standard 300 DPI print pixel dimensions
+  // A4: 8.267" × 11.693" -> 2480 × 3508 pixels at 300 DPI
+  let targetWidth = 2480;
+  let targetHeight = 3508;
+  let paperLabel = 'A4';
 
-  const renderPage = async (el: HTMLElement, pageNum: number, total: number) => {
-    onProgress?.(`পৃষ্ঠা ${pageNum}/${total} হাই-কোয়ালিটি JPG তৈরি হচ্ছে...`);
-    return await html2canvas(el, {
-      scale: 2,
+  if (paper === 'letter') {
+    targetWidth = 2550;
+    targetHeight = 3300;
+    paperLabel = 'Letter';
+  } else if (paper === 'legal') {
+    targetWidth = 2550;
+    targetHeight = 4200;
+    paperLabel = 'Legal';
+  }
+
+  const renderPageToExactJpgBlob = async (el: HTMLElement, pageNum: number, total: number): Promise<Blob> => {
+    onProgress?.(`পৃষ্ঠা ${pageNum}/${total}: A4 (${targetWidth} × ${targetHeight} px, 300 DPI) রেন্ডার হচ্ছে...`);
+
+    // Capture element with html2canvas at scale: 2.8 for razor-sharp typography
+    const rawCanvas = await html2canvas(el, {
+      scale: 2.8,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
@@ -189,29 +279,98 @@ export async function exportCVToJPG(
         applyClonedDocFontFixes(clonedDoc);
       },
     });
+
+    // Create an exact 300 DPI canvas (A4: 2480 x 3508 px)
+    const exactCanvas = document.createElement('canvas');
+    exactCanvas.width = targetWidth;
+    exactCanvas.height = targetHeight;
+    const ctx = exactCanvas.getContext('2d', { alpha: false });
+
+    if (!ctx) {
+      throw new Error('ক্যানভাস রেন্ডারিং কনটেক্সট তৈরি করতে সমস্যা হয়েছে');
+    }
+
+    // Fill with clean white sheet background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, targetWidth, targetHeight);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Calculate source ratio and scale onto exact A4 sheet
+    const rawWidth = rawCanvas.width;
+    const rawHeight = rawCanvas.height;
+    const rawRatio = rawWidth / rawHeight;
+    const targetRatio = targetWidth / targetHeight;
+
+    // If within 5% of target aspect ratio, stretch to 100% full bleed A4
+    if (Math.abs(rawRatio - targetRatio) < 0.05) {
+      ctx.drawImage(rawCanvas, 0, 0, rawWidth, rawHeight, 0, 0, targetWidth, targetHeight);
+    } else {
+      let drawW = targetWidth;
+      let drawH = targetHeight;
+      let offX = 0;
+      let offY = 0;
+
+      if (rawRatio > targetRatio) {
+        drawH = targetWidth / rawRatio;
+        offY = Math.max(0, (targetHeight - drawH) / 2);
+      } else {
+        drawW = targetHeight * rawRatio;
+        offX = Math.max(0, (targetWidth - drawW) / 2);
+      }
+      ctx.drawImage(rawCanvas, 0, 0, rawWidth, rawHeight, offX, offY, drawW, drawH);
+    }
+
+    // Convert to JPEG with 0.96 quality
+    const rawBlob = await new Promise<Blob | null>((resolve) => {
+      exactCanvas.toBlob((b) => resolve(b), 'image/jpeg', 0.96);
+    });
+
+    if (!rawBlob) {
+      throw new Error('JPG ইমেজ তৈরি করা যায়নি');
+    }
+
+    // Inject 300 DPI metadata in the JPEG binary header
+    const buffer = await rawBlob.arrayBuffer();
+    const dpiAdjustedBytes = setJpegDpi(new Uint8Array(buffer), 300);
+
+    return new Blob([dpiAdjustedBytes], { type: 'image/jpeg' });
+  };
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 2500);
   };
 
   if (pageIndex !== undefined) {
     const targetEl = pageElements[pageIndex];
     if (!targetEl) throw new Error(`পেজ ${pageIndex + 1} পাওয়া যায়নি`);
-    const canvas = await renderPage(targetEl, pageIndex + 1, pageElements.length);
-    const filename = `${cleanName}_CV_Page_${pageIndex + 1}.jpg`;
-    downloadCanvasAsJPG(canvas, filename);
-    onProgress?.(`পেজ ${pageIndex + 1} JPG ডাউনলোড সফল হয়েছে!`);
+    const blob = await renderPageToExactJpgBlob(targetEl, pageIndex + 1, pageElements.length);
+    const filename = `${cleanName}_CV_Page_${pageIndex + 1}_${paperLabel}_300DPI.jpg`;
+    triggerDownload(blob, filename);
+    onProgress?.(`পেজ ${pageIndex + 1} A4 (300 DPI) JPG ডাউনলোড সফল হয়েছে!`);
   } else {
     // Export all pages
     for (let i = 0; i < pageElements.length; i++) {
-      const canvas = await renderPage(pageElements[i], i + 1, pageElements.length);
-      const filename = pageElements.length === 1 
-        ? `${cleanName}_CV.jpg` 
-        : `${cleanName}_CV_Page_${i + 1}.jpg`;
-      downloadCanvasAsJPG(canvas, filename);
+      const blob = await renderPageToExactJpgBlob(pageElements[i], i + 1, pageElements.length);
+      const filename = pageElements.length === 1
+        ? `${cleanName}_CV_${paperLabel}_300DPI.jpg`
+        : `${cleanName}_CV_Page_${i + 1}_${paperLabel}_300DPI.jpg`;
+      triggerDownload(blob, filename);
 
       if (i < pageElements.length - 1) {
-        await new Promise((r) => setTimeout(r, 400));
+        await new Promise((r) => setTimeout(r, 600));
       }
     }
-    onProgress?.('সবগুলো পেজের JPG ডাউনলোড সম্পন্ন হয়েছে!');
+    onProgress?.(`সবগুলো পেজ A4 (${paperLabel} 300 DPI) JPG হিসেবে ডাউনলোড সম্পন্ন হয়েছে!`);
   }
 }
 

@@ -1,4 +1,5 @@
 import { PassportScanResult } from './passportScanner';
+import { cleanExcessiveLocalStorageQuota } from './imageCompressor';
 
 export interface PassportHistoryItem {
   id: string;
@@ -48,6 +49,70 @@ const DEFAULT_SEEDED_HISTORY: PassportHistoryItem[] = [
 ];
 
 /**
+ * Bulletproof multi-stage saver that handles QuotaExceededError automatically.
+ */
+function safeSavePassportHistory(items: PassportHistoryItem[]): boolean {
+  const candidates = items.slice(0, 30);
+
+  // Stage 1: Standard save
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(candidates));
+    return true;
+  } catch {
+    // Quota reached: immediately run sanitation
+    cleanExcessiveLocalStorageQuota();
+  }
+
+  // Stage 2: Keep thumbnail only on index 0 if small (< 10KB); strip all others
+  const stripOldThumbs = candidates.map((item, idx) => {
+    if (idx === 0 && item.imageThumbnail && item.imageThumbnail.length <= 10000) {
+      return item;
+    }
+    const { imageThumbnail, ...rest } = item;
+    return rest as PassportHistoryItem;
+  });
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stripOldThumbs));
+    return true;
+  } catch {
+    // continue
+  }
+
+  // Stage 3: Strip ALL thumbnails completely
+  const noThumbs = candidates.map((item) => {
+    const { imageThumbnail, ...rest } = item;
+    return rest as PassportHistoryItem;
+  });
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(noThumbs));
+    return true;
+  } catch {
+    // continue
+  }
+
+  // Stage 4: Reduce item count (15, 10, 5, 2) and shorten rawText
+  for (const count of [15, 10, 5, 2]) {
+    try {
+      const reduced = noThumbs.slice(0, count).map((item) => ({
+        ...item,
+        data: {
+          ...item.data,
+          rawText: item.data.rawText ? item.data.rawText.substring(0, 300) : '',
+        },
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reduced));
+      return true;
+    } catch {
+      // try next smaller count
+    }
+  }
+
+  return false;
+}
+
+/**
  * Get total lifetime scanned passports count
  */
 export function getTotalPassportScansCount(): number {
@@ -89,8 +154,12 @@ export function getPassportHistory(): PassportHistoryItem[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       // First time: initialize with default seeded entry
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SEEDED_HISTORY));
-      localStorage.setItem(TOTAL_SCANS_COUNTER_KEY, '1');
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SEEDED_HISTORY));
+        localStorage.setItem(TOTAL_SCANS_COUNTER_KEY, '1');
+      } catch {
+        // ignore
+      }
       return DEFAULT_SEEDED_HISTORY;
     }
     const parsed = JSON.parse(raw);
@@ -99,13 +168,23 @@ export function getPassportHistory(): PassportHistoryItem[] {
     }
     return [];
   } catch (err) {
-    console.error('Failed to load passport history:', err);
+    console.warn('Failed to load passport history, running quota cleanup:', err);
+    try {
+      cleanExcessiveLocalStorageQuota();
+      const raw2 = localStorage.getItem(STORAGE_KEY);
+      if (raw2) {
+        const parsed2 = JSON.parse(raw2);
+        if (Array.isArray(parsed2)) return parsed2;
+      }
+    } catch {
+      // ignore
+    }
     return [];
   }
 }
 
 /**
- * Save a new scan result to history (limits to latest 50 items)
+ * Save a new scan result to history safely without quota errors
  */
 export function savePassportScanToHistory(
   scanResult: PassportScanResult,
@@ -123,11 +202,15 @@ export function savePassportScanToHistory(
     const name = (scanResult.fullName || 'নামহীন প্রার্থী').trim().toUpperCase();
     const passNo = (scanResult.passportNumber || 'N/A').trim().toUpperCase();
 
-    // Increment lifetime counter
-    const currentTotal = getTotalPassportScansCount();
-    localStorage.setItem(TOTAL_SCANS_COUNTER_KEY, String(currentTotal + 1));
+    // Increment lifetime counter safely
+    try {
+      const currentTotal = getTotalPassportScansCount();
+      localStorage.setItem(TOTAL_SCANS_COUNTER_KEY, String(currentTotal + 1));
+    } catch {
+      // ignore counter fail
+    }
 
-    // Prevent duplicate entries if scanned within 5 seconds with same passport number
+    // Prevent duplicate entries if scanned within 10 seconds with same passport number
     const isDuplicate = current.some(
       (item) =>
         item.data.passportNumber &&
@@ -141,26 +224,36 @@ export function savePassportScanToHistory(
       return current;
     }
 
+    // Cap thumbnail size to 12KB to protect localStorage quota
+    const safeThumbnail =
+      imageThumbnail && imageThumbnail.length <= 12000 ? imageThumbnail : undefined;
+
+    // Truncate rawText to avoid huge text dumps
+    const safeData: PassportScanResult = {
+      ...scanResult,
+      rawText: scanResult.rawText ? scanResult.rawText.substring(0, 1000) : '',
+    };
+
     const newItem: PassportHistoryItem = {
       id: `ps_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       scannedAt: formattedDate,
       timestamp: Date.now(),
       title: `${name} (${passNo !== 'N/A' ? `পাসপোর্ট: ${passNo}` : 'স্ক্যান ডাটা'})`,
-      data: { ...scanResult },
-      imageThumbnail: imageThumbnail && imageThumbnail.length < 300000 ? imageThumbnail : undefined,
+      data: safeData,
+      imageThumbnail: safeThumbnail,
       source: scanResult.source || 'gemini-ai',
     };
 
-    // Keep most recent first, max 50 items
-    const updated = [newItem, ...current].slice(0, 50);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    // Keep most recent first, max 30 items
+    const updated = [newItem, ...current].slice(0, 30);
+    safeSavePassportHistory(updated);
 
     // Dispatch global event for live counter update
     window.dispatchEvent(new CustomEvent('pro_cv_history_updated'));
 
     return updated;
   } catch (err) {
-    console.error('Failed to save passport history:', err);
+    console.warn('Handled passport history save exception gracefully:', err);
     return getPassportHistory();
   }
 }

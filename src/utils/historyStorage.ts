@@ -1,9 +1,10 @@
 import { CVData, CVTemplateId, StyleConfig, CVHistoryItem } from '../types';
 import { PRESET_ALAMEN_PASSPORT } from '../data/samplePresets';
+import { cleanExcessiveLocalStorageQuota } from './imageCompressor';
 
 const STORAGE_KEY = 'pro_cv_builder_history_v1';
 const TOTAL_CVS_COUNTER_KEY = 'pro_cv_total_cvs_made_count';
-const MAX_HISTORY_ITEMS = 50;
+const MAX_HISTORY_ITEMS = 30;
 
 const DEFAULT_SEEDED_CV_HISTORY: CVHistoryItem[] = [
   {
@@ -22,6 +23,62 @@ const DEFAULT_SEEDED_CV_HISTORY: CVHistoryItem[] = [
     summary: 'পাসপোর্ট: A16474136 • মোবাইল: +880 1700-000000 • অভিজ্ঞতা: ২ বছর • অটো-সেভ হিস্টোরি',
   },
 ];
+
+/**
+ * Safe multi-tier saver for CV history to avoid QuotaExceededError
+ */
+function safeSaveCVHistory(items: CVHistoryItem[]): boolean {
+  const candidates = items.slice(0, MAX_HISTORY_ITEMS);
+
+  // Stage 1: Try normal save
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(candidates));
+    return true;
+  } catch {
+    cleanExcessiveLocalStorageQuota();
+  }
+
+  // Stage 2: Strip photoUrl from older snapshots (keep only on index 0)
+  const stripOldPhotos = candidates.map((item, idx) => {
+    if (idx === 0) return item;
+    if (item.data && item.data.photoUrl) {
+      return {
+        ...item,
+        data: {
+          ...item.data,
+          photoUrl: '',
+        },
+      };
+    }
+    return item;
+  });
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stripOldPhotos));
+    return true;
+  } catch {
+    // continue
+  }
+
+  // Stage 3: Strip photoUrl completely and trim count
+  for (const count of [15, 10, 5, 2]) {
+    try {
+      const reduced = stripOldPhotos.slice(0, count).map((item) => ({
+        ...item,
+        data: {
+          ...item.data,
+          photoUrl: '',
+        },
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reduced));
+      return true;
+    } catch {
+      // try smaller count
+    }
+  }
+
+  return false;
+}
 
 /**
  * Get total lifetime created CVs count
@@ -168,23 +225,18 @@ export function autoSaveCVToHistory(
       summary,
     };
 
-    // Increment lifetime counter
-    const currentTotal = getTotalCVsCount();
-    localStorage.setItem(TOTAL_CVS_COUNTER_KEY, String(currentTotal + 1));
+    // Increment lifetime counter safely
+    try {
+      const currentTotal = getTotalCVsCount();
+      localStorage.setItem(TOTAL_CVS_COUNTER_KEY, String(currentTotal + 1));
+    } catch {
+      // ignore
+    }
 
     updatedList = [savedItem, ...current].slice(0, MAX_HISTORY_ITEMS);
   }
 
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
-  } catch (err) {
-    console.warn('LocalStorage save warning, trimming:', err);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList.slice(0, 15)));
-    } catch {
-      // ignore
-    }
-  }
+  safeSaveCVHistory(updatedList);
 
   // Dispatch global event so counters everywhere update automatically
   window.dispatchEvent(new CustomEvent('pro_cv_history_updated'));
@@ -237,9 +289,13 @@ export function saveCVToHistory(
     summary,
   };
 
-  // Increment lifetime total
-  const currentTotal = getTotalCVsCount();
-  localStorage.setItem(TOTAL_CVS_COUNTER_KEY, String(currentTotal + 1));
+  // Increment lifetime total safely
+  try {
+    const currentTotal = getTotalCVsCount();
+    localStorage.setItem(TOTAL_CVS_COUNTER_KEY, String(currentTotal + 1));
+  } catch {
+    // ignore
+  }
 
   // Filter out identical within 3 seconds
   const filtered = current.filter((item) => {
@@ -250,16 +306,7 @@ export function saveCVToHistory(
 
   const updated = [newItem, ...filtered].slice(0, MAX_HISTORY_ITEMS);
 
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  } catch (err) {
-    console.warn('LocalStorage full, trimming history:', err);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated.slice(0, 15)));
-    } catch {
-      // ignore
-    }
-  }
+  safeSaveCVHistory(updated);
 
   // Dispatch global event for live counter update
   window.dispatchEvent(new CustomEvent('pro_cv_history_updated'));
